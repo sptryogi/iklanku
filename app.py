@@ -195,7 +195,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     df_unique_orders = df_order.sort_values(['No. Pesanan', 'Nama Produk']).drop_duplicates(subset=['No. Pesanan'], keep='first').copy()
     
     # Siapkan kolom variasi bersih
-    df_unique_orders['Variasi_Clean'] = df_unique_orders['Variasi'].apply(clean_variasi)
+    df_unique_orders['Variasi_Clean'] = df_unique_orders['Nama Variasi'].apply(clean_variasi)
     
     # Group by Nama Produk & Variasi
     grp_rincian = df_unique_orders.groupby(['Nama Produk', 'Variasi_Clean']).agg(
