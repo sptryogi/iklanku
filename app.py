@@ -3,6 +3,7 @@ import pandas as pd
 import io
 import re
 from datetime import datetime
+import xlsxwriter
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="IklanKu (Laporan Harian)", layout="wide")
