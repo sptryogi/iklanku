@@ -1,4 +1,6 @@
 streamlit
 pandas
-xlsxwriter
+numpy
 openpyxl
+xlsxwriter
+python-dateutil
