@@ -230,7 +230,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     fmt_date = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1})
     fmt_col_name = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#f0f0f0'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
-    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
+    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'left'})
     fmt_percent = workbook.add_format({'border': 1, 'num_format': '0.00%', 'align': 'center'})
     
     # --- SHEET 1: LAPORAN IKLAN ---
