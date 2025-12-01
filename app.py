@@ -64,6 +64,11 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         st.error("Kolom 'Waktu Pesanan Dibuat' tidak ditemukan di Order-all")
         return None
 
+    if 'Total Harga Produk' in df_order.columns:
+        # Hapus 'Rp', hapus titik ribuan, ganti koma desimal jadi titik
+        df_order['Total Harga Produk'] = df_order['Total Harga Produk'].astype(str).str.replace('Rp', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        df_order['Total Harga Produk'] = pd.to_numeric(df_order['Total Harga Produk'], errors='coerce').fillna(0)
+
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     # Hapus 7 baris pertama (index 0-6), baris ke-8 (index 7) jadi header
     new_header = df_iklan_raw.iloc[7]
@@ -77,7 +82,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         df_iklan = df_iklan.drop_duplicates(subset=['Nama Iklan'])
     
     # Konversi kolom numerik di iklan
-    cols_to_num = ['Dilihat', 'Jumlah Klik', 'Omzet Penjualan']
+    cols_to_num = ['Dilihat', 'Jumlah Klik', 'Omzet Penjualan', 'Biaya']
     for col in cols_to_num:
         if col in df_iklan.columns:
             # Hapus simbol mata uang atau pemisah ribuan jika ada
@@ -147,7 +152,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             mask = df_iklan['Nama Iklan'].str.contains(query, case=True, regex=False)
         else:
             mask = df_iklan['Nama Iklan'].str.contains(query, case=False, regex=False)
-        return df_iklan[mask]['Omzet Penjualan'].sum()
+        return df_iklan[mask]['Biaya'].sum()
 
     # "A5 Koran" (Kapital logic - asumsikan mengandung 'A5 KORAN' atau 'A5 Koran' vs 'a5 koran')
     # Prompt agak ambigu, saya gunakan pendekatan: Mengandung "A5 Koran" (Case sensitive)
@@ -155,8 +160,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     # "A5 Koran Paket 7" (Lowercase logic? Prompt: "tapii yang lowercase")
     # Saya gunakan pendekatan: Mengandung "a5 koran" (lowercase) tapi TIDAK mengandung "A5 Koran"
-    mask_lower = (df_iklan['Nama Iklan'].str.contains("a5 koran", case=False)) & (~df_iklan['Nama Iklan'].str.contains("A5 Koran", case=True))
-    biaya_a5_koran_pkt7 = df_iklan[mask_lower]['Omzet Penjualan'].sum()
+    mask_lower = (df_iklan['Nama Iklan'].str.contains("A5 koran", case=False)) & (~df_iklan['Nama Iklan'].str.contains("A5 Koran", case=True))
+    biaya_a5_koran_pkt7 = df_iklan[mask_lower]['Biaya'].sum()
     
     # "A6 Pastel" (Case insensitive)
     biaya_a6_pastel = get_omzet_contains("A6 Pastel", case_sensitive=False)
