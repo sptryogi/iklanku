@@ -86,7 +86,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     for col in cols_to_num:
         if col in df_iklan.columns:
             # Hapus simbol mata uang atau pemisah ribuan jika ada
-            df_iklan[col] = pd.to_numeric(df_iklan[col].astype(str).str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+            # df_iklan[col] = pd.to_numeric(df_iklan[col].astype(str).str.replace('.', '').str.replace(',', '.'), errors='coerce').fillna(0)
+            df_iklan[col] = df_iklan[col].astype(str).str.replace('Rp', '', regex=False).str.strip().str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+            df_iklan[col] = pd.to_numeric(df_iklan[col], errors='coerce').fillna(0)
 
     # 4. KATEGORISASI DATA (AFFILIATE, IKLAN, ORGANIK) & HIGHLIGHTING
     # Setup list untuk tracking
@@ -230,8 +232,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     fmt_date = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1})
     fmt_col_name = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#f0f0f0'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
-    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'left'})
+    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
     fmt_percent = workbook.add_format({'border': 1, 'num_format': '0.00%', 'align': 'center'})
+    fmt_text_left = workbook.add_format({'border': 1, 'align': 'left'})
     
     # --- SHEET 1: LAPORAN IKLAN ---
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
@@ -284,7 +287,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     curr_t2_row = t2_row + 1
     for label, val, fmt in rincian_items:
-        ws_lap.write(curr_t2_row, 6, label, fmt_num)
+        ws_lap.write(curr_t2_row, 6, label, fmt_text_left)
         ws_lap.write(curr_t2_row, 7, val, fmt)
         curr_t2_row += 1
 
@@ -364,7 +367,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         
     curr_t5_row = t5_row + 2
     for idx, row in grp_rincian.iterrows():
-        ws_lap.write(curr_t5_row, 6, row['Nama Produk'], fmt_num)
+        ws_lap.write(curr_t5_row, 6, row['Nama Produk'], fmt_text_left)
         ws_lap.write(curr_t5_row, 7, row['Variasi_Clean'], fmt_num)
         ws_lap.write(curr_t5_row, 8, row['Jumlah_Pesanan'], fmt_num)
         ws_lap.write(curr_t5_row, 9, row['Jumlah Eksemplar'], fmt_num)
@@ -386,7 +389,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ]
     
     for label, val, fmt in summary_data:
-        ws_lap.merge_range(t6_row, 11, t6_row, 14, label, fmt_num)
+        ws_lap.merge_range(t6_row, 11, t6_row, 14, label, fmt_text_left)
         ws_lap.write(t6_row, 15, val, fmt)
         t6_row += 1
 
