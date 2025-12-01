@@ -216,7 +216,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # --- MEMBUAT FILE EXCEL ---
     output = io.BytesIO()
-    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    workbook = writer.book
     
     # FORMATS
     fmt_header_main = workbook.add_format({'bold': True, 'font_size': 14, 'bg_color': '#ADD8E6', 'align': 'left', 'valign': 'vcenter'})
@@ -386,7 +387,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # --- SIMPAN SHEET LAINNYA ---
     # 1. order-all (dengan highlight)
-    df_order.to_excel(workbook, sheet_name='order-all', index=False)
+    df_order.to_excel(writer, sheet_name='order-all', index=False)
     ws_order = workbook.get_worksheet_by_name('order-all')
     
     # Format Highlight
@@ -424,12 +425,12 @@ def process_data(store_name, file_order, file_iklan, file_seller):
                         ws_order.write(row_idx + 1, col_idx, val, row_fmt)
 
     # 2. Iklan klik (Cleaned)
-    df_iklan.to_excel(workbook, sheet_name='Iklan klik', index=False)
+    df_iklan.to_excel(writer, sheet_name='Iklan klik', index=False)
     
     # 3. Seller conversion (Raw)
-    df_seller.to_excel(workbook, sheet_name='Seller conversion', index=False)
+    df_seller.to_excel(writer, sheet_name='Seller conversion', index=False)
 
-    workbook.close()
+    writer.close()
     output.seek(0)
     return output
 
