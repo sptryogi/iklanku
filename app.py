@@ -158,15 +158,29 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # "A5 Koran" (Kapital logic - asumsikan mengandung 'A5 KORAN' atau 'A5 Koran' vs 'a5 koran')
     # Prompt agak ambigu, saya gunakan pendekatan: Mengandung "A5 Koran" (Case sensitive)
-    biaya_a5_koran = get_omzet_contains("A5 Koran", case_sensitive=True) 
+    # biaya_a5_koran = get_omzet_contains("A5 Koran", case_sensitive=True) 
     
-    # "A5 Koran Paket 7" (Lowercase logic? Prompt: "tapii yang lowercase")
-    # Saya gunakan pendekatan: Mengandung "a5 koran" (lowercase) tapi TIDAK mengandung "A5 Koran"
-    mask_lower = (df_iklan['Nama Iklan'].str.contains("A5 koran", case=False)) & (~df_iklan['Nama Iklan'].str.contains("A5 Koran", case=True))
-    biaya_a5_koran_pkt7 = df_iklan[mask_lower]['Biaya'].sum()
+    # # "A5 Koran Paket 7" (Lowercase logic? Prompt: "tapii yang lowercase")
+    # # Saya gunakan pendekatan: Mengandung "a5 koran" (lowercase) tapi TIDAK mengandung "A5 Koran"
+    # mask_lower = (df_iklan['Nama Iklan'].str.contains("A5 koran", case=False)) & (~df_iklan['Nama Iklan'].str.contains("A5 Koran", case=True))
+    # biaya_a5_koran_pkt7 = df_iklan[mask_lower]['Biaya'].sum()
     
-    # "A6 Pastel" (Case insensitive)
-    biaya_a6_pastel = get_omzet_contains("A6 Pastel", case_sensitive=False)
+    # # "A6 Pastel" (Case insensitive)
+    # biaya_a6_pastel = get_omzet_contains("A6 Pastel", case_sensitive=False)
+    # A5 Koran (versi WAKAF / uppercase)
+    mask_a5_koran = df_iklan['Nama Iklan'].str.contains("A5 KERTAS KORAN", case=False)
+    biaya_a5_koran = df_iklan[mask_a5_koran]['Biaya'].sum()
+    
+    # A6 Pastel
+    mask_a6_pastel = df_iklan['Nama Iklan'].str.contains("A6", case=False) & \
+                      df_iklan['Nama Iklan'].str.contains("PASTEL", case=False)
+    biaya_a6_pastel = df_iklan[mask_a6_pastel]['Biaya'].sum()
+    
+    # A5 Koran Paket 7 (produk paket)
+    mask_a5_pkt = df_iklan['Nama Iklan'].str.contains("PAKET", case=False) & \
+                   df_iklan['Nama Iklan'].str.contains("A5", case=False) & \
+                   df_iklan['Nama Iklan'].str.contains("KORAN", case=False)
+    biaya_a5_koran_pkt7 = df_iklan[mask_a5_pkt]['Biaya'].sum()
     
     # "Komik Pahlawan" (Case insensitive)
     biaya_komik = get_omzet_contains("Komik Pahlawan", case_sensitive=False)
