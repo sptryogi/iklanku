@@ -46,7 +46,8 @@ def clean_variasi(text):
 def process_data(store_name, file_order, file_iklan, file_seller):
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
-    df_iklan_raw = pd.read_csv(file_iklan, header=None) # Load tanpa header dulu untuk skip baris
+    # df_iklan_raw = pd.read_csv(file_iklan, header=None) # Load tanpa header dulu untuk skip baris
+    df_iklan_raw = pd.read_csv(file_iklan, header=None, sep=None, engine='python')
     df_seller = pd.read_csv(file_seller)
 
     # 2. PRE-PROCESS ORDER-ALL
@@ -65,19 +66,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         return None
 
     if 'Total Harga Produk' in df_order.columns:
-        # Cek tipe data dulu. Jika sudah numeric (int/float), jangan di-replace string-nya
-        # if df_order['Total Harga Produk'].dtype == 'object':
-        #     # Bersihkan hanya jika tipe data adalah string/object
-        #     df_order['Total Harga Produk'] = (
-        #         df_order['Total Harga Produk']
-        #         .astype(str)
-        #         .str.replace('Rp', '', regex=False)
-        #         .str.replace(' ', '', regex=False) # Hapus spasi
-        #         .str.replace('.', '', regex=False) # Hapus pemisah ribuan (indo)
-        #         .str.replace(',', '.', regex=False) # Ubah koma jadi titik desimal
-        #     )
-        
-        # Konversi ke angka
         df_order['Total Harga Produk'] = pd.to_numeric(df_order['Total Harga Produk'], errors='coerce').fillna(0)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
