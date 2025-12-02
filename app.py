@@ -47,7 +47,13 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
     df_iklan = pd.read_csv(file_iklan, skiprows=7)
-    df_seller = pd.read_csv(file_seller)
+    # df_seller = pd.read_csv(file_seller)
+    # Cek apakah file_seller ada isinya (Optional)
+    if file_seller is not None:
+        df_seller = pd.read_csv(file_seller)
+    else:
+        # Jika tidak ada, buat DataFrame kosong dengan kolom minimal agar tidak error saat merge
+        df_seller = pd.DataFrame(columns=['Kode Pesanan', 'Pengeluaran(Rp)'])
 
     # 2. PRE-PROCESS ORDER-ALL
     # Filter Status Pesanan != Batal
@@ -270,6 +276,23 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
     fmt_percent = workbook.add_format({'border': 1, 'num_format': '0.00%', 'align': 'center'})
     fmt_text_left = workbook.add_format({'border': 1, 'align': 'left'})
+
+    # --- FORMAT WARNA HEADER BARU ---
+    # Tabel 1: Orange (#FFA500)
+    fmt_head_orange = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FFA500'})
+    # Tabel 2: Coklat (#D2691E - Chocolate, agar tulisan hitam masih terbaca)
+    fmt_head_brown = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D2691E', 'font_color': 'white'})
+    # Tabel 3: Kuning (#FFFF00)
+    fmt_head_yellow = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FFFF00'})
+    # Tabel 4: Pink (#FFC0CB)
+    fmt_head_pink = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FFC0CB'})
+    # Tabel 5: Hijau (#90EE90)
+    fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#90EE90'})
+
+    # --- FORMAT BOLD UNTUK SUMMARY ---
+    fmt_text_left_bold = workbook.add_format({'border': 1, 'align': 'left', 'bold': True})
+    fmt_curr_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True})
+    fmt_num_bold = workbook.add_format({'border': 1, 'align': 'center', 'bold': True})
     
     # --- SHEET 1: LAPORAN IKLAN ---
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
@@ -279,7 +302,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     # --- TABEL 1: PESANAN IKLAN (A-E) ---
     start_row = 3 # Row 4
-    ws_lap.merge_range(start_row, 0, start_row, 4, 'PESANAN IKLAN', fmt_header_table)
+    ws_lap.merge_range(start_row, 0, start_row, 4, 'PESANAN IKLAN', fmt_head_orange)
     ws_lap.merge_range(start_row+1, 0, start_row+2, 4, report_date, fmt_date)
     
     cols_t1 = ['LIHAT', 'KLIK', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN']
@@ -306,7 +329,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- TABEL 2: RINCIAN IKLAN KLIK (G-H) ---
     # Posisi sejajar dengan PESANAN IKLAN
     t2_row = start_row
-    ws_lap.merge_range(t2_row, 6, t2_row, 7, 'RINCIAN IKLAN KLIK', fmt_header_table)
+    ws_lap.merge_range(t2_row, 6, t2_row, 7, 'RINCIAN IKLAN KLIK', fmt_head_brown)
     # Item rincian
     rincian_items = [
         ('Total Iklan Dilihat', total_dilihat, fmt_num),
@@ -328,7 +351,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # --- TABEL 3: PESANAN AFFILIATE (L-P) ---
     t3_row = start_row
-    ws_lap.merge_range(t3_row, 11, t3_row, 15, 'PESANAN AFFILIATE', fmt_header_table)
+    ws_lap.merge_range(t3_row, 11, t3_row, 15, 'PESANAN AFFILIATE', fmt_head_yellow)
     cols_t3 = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan', 'Komisi']
     for i, col in enumerate(cols_t3):
         ws_lap.write(t3_row+1, 11+i, col, fmt_col_name)
@@ -364,7 +387,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- TABEL 4: PESANAN ORGANIK (L-O) ---
     # Dibawah Affiliate
     t4_row = last_row_affiliate + 2
-    ws_lap.merge_range(t4_row, 11, t4_row, 14, 'PESANAN ORGANIK', fmt_header_table)
+    ws_lap.merge_range(t4_row, 11, t4_row, 14, 'PESANAN ORGANIK', fmt_head_pink)
     cols_t4 = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan']
     for i, col in enumerate(cols_t4):
         ws_lap.write(t4_row+1, 11+i, col, fmt_col_name)
@@ -392,7 +415,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     total_seluruh_pesanan_val = tbl_iklan_data['PESANAN'].sum() + tbl_affiliate_data['PESANAN'].sum() + tbl_organik_data['PESANAN'].sum()
     
-    ws_lap.write(t5_row, 6, 'RINCIAN SELURUH PESANAN', fmt_header_table)
+    ws_lap.write(t5_row, 6, 'RINCIAN SELURUH PESANAN', fmt_head_green)
     ws_lap.write(t5_row, 7, total_seluruh_pesanan_val, fmt_header_table) # Col H
     ws_lap.merge_range(t5_row, 8, t5_row, 9, "", fmt_header_table)
     
@@ -423,9 +446,19 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         ('ROASF', roasf, fmt_num)
     ]
     
+    # for label, val, fmt in summary_data:
+    #     ws_lap.merge_range(t6_row, 11, t6_row, 14, label, fmt_text_left)
+    #     ws_lap.write(t6_row, 15, val, fmt)
+    #     t6_row += 1
     for label, val, fmt in summary_data:
-        ws_lap.merge_range(t6_row, 11, t6_row, 14, label, fmt_text_left)
-        ws_lap.write(t6_row, 15, val, fmt)
+        # Tentukan format nilai (Currency atau Number/Percent) tapi versi BOLD
+        if fmt == fmt_curr:
+            use_fmt = fmt_curr_bold
+        else:
+            use_fmt = fmt_num_bold # Default ke num bold untuk ROASF
+            
+        ws_lap.merge_range(t6_row, 11, t6_row, 14, label, fmt_text_left_bold) # Label Bold
+        ws_lap.write(t6_row, 15, val, use_fmt) # Value Bold
         t6_row += 1
 
     # --- SIMPAN SHEET LAINNYA ---
@@ -491,11 +524,14 @@ with col1:
     f_order = st.file_uploader("Upload 'Order-all' (xlsx)", type=['xlsx'])
 with col2:
     f_iklan = st.file_uploader("Upload 'Iklan Keseluruhan' (csv)", type=['csv'])
+# with col3:
+#     f_seller = st.file_uploader("Upload 'Seller conversion' (csv)", type=['csv'])
 with col3:
-    f_seller = st.file_uploader("Upload 'Seller conversion' (csv)", type=['csv'])
+    # Tambahkan label (Opsional)
+    f_seller = st.file_uploader("Upload 'Seller conversion' (csv) - Opsional", type=['csv'])
 
 if st.button("Mulai Proses", type="primary"):
-    if f_order and f_iklan and f_seller:
+    if f_order and f_iklan:
         with st.spinner('Sedang memproses data... Tunggu sebentar ya...'):
             try:
                 excel_file = process_data(toko, f_order, f_iklan, f_seller)
