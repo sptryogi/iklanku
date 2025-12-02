@@ -65,8 +65,19 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         return None
 
     if 'Total Harga Produk' in df_order.columns:
-        # Hapus 'Rp', hapus titik ribuan, ganti koma desimal jadi titik
-        df_order['Total Harga Produk'] = df_order['Total Harga Produk'].astype(str).str.replace('Rp', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
+        # Cek tipe data dulu. Jika sudah numeric (int/float), jangan di-replace string-nya
+        if df_order['Total Harga Produk'].dtype == 'object':
+            # Bersihkan hanya jika tipe data adalah string/object
+            df_order['Total Harga Produk'] = (
+                df_order['Total Harga Produk']
+                .astype(str)
+                .str.replace('Rp', '', regex=False)
+                .str.replace(' ', '', regex=False) # Hapus spasi
+                .str.replace('.', '', regex=False) # Hapus pemisah ribuan (indo)
+                .str.replace(',', '.', regex=False) # Ubah koma jadi titik desimal
+            )
+        
+        # Konversi ke angka
         df_order['Total Harga Produk'] = pd.to_numeric(df_order['Total Harga Produk'], errors='coerce').fillna(0)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
@@ -155,6 +166,13 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         else:
             mask = df_iklan['Nama Iklan'].str.contains(query, case=False, regex=False)
         return df_iklan[mask]['Biaya'].sum()
+        
+    def get_biaya_regex(pattern, case_sensitive=False):
+        if 'Biaya' not in df_iklan.columns:
+            return 0
+        # regex=True dan '.*' memungkinkan ada kata di tengah (misal: A5 Kertas Koran)
+        mask = df_iklan['Nama Iklan'].str.contains(pattern, case=case_sensitive, regex=True, na=False)
+        return df_iklan[mask]['Biaya'].sum()
 
     # "A5 Koran" (Kapital logic - asumsikan mengandung 'A5 KORAN' atau 'A5 Koran' vs 'a5 koran')
     # Prompt agak ambigu, saya gunakan pendekatan: Mengandung "A5 Koran" (Case sensitive)
@@ -168,23 +186,23 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # # "A6 Pastel" (Case insensitive)
     # biaya_a6_pastel = get_omzet_contains("A6 Pastel", case_sensitive=False)
     # A5 Koran (versi WAKAF / uppercase)
-    mask_a5_koran = df_iklan['Nama Iklan'].str.contains("A5 KERTAS KORAN", case=False)
-    biaya_a5_koran = df_iklan[mask_a5_koran]['Biaya'].sum()
+    biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
     
-    # A6 Pastel
-    mask_a6_pastel = df_iklan['Nama Iklan'].str.contains("A6", case=False) & \
-                      df_iklan['Nama Iklan'].str.contains("PASTEL", case=False)
-    biaya_a6_pastel = df_iklan[mask_a6_pastel]['Biaya'].sum()
+    # 2. Biaya Iklan A6 Pastel (Bebas besar/kecil)
+    # Mencari "A6" diikuti "Pastel" (Case Sensitive = False)
+    # Cocok dengan "...A6 ... WARNA PASTEL"
+    biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
     
-    # A5 Koran Paket 7 (produk paket)
-    mask_a5_pkt = df_iklan['Nama Iklan'].str.contains("PAKET", case=False) & \
-                   df_iklan['Nama Iklan'].str.contains("A5", case=False) & \
-                   df_iklan['Nama Iklan'].str.contains("KORAN", case=False)
-    biaya_a5_koran_pkt7 = df_iklan[mask_a5_pkt]['Biaya'].sum()
+    # 3. Biaya Iklan A5 Koran Paket 7 (LOWERCASE / Title Case)
+    # Logic: Cari yang mengandung "A5...Koran" (secara umum), TAPI kurangi yang sudah masuk kategori KAPITAL diatas.
+    # Ini menangkap "Paket ... A5 Kertas Koran" (karena 'Koran' tidak sama dengan 'KORAN' di mode case sensitive)
+    total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
+    biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
     
-    # "Komik Pahlawan" (Case insensitive)
-    biaya_komik = get_omzet_contains("Komik Pahlawan", case_sensitive=False)
+    # 4. Biaya Komik Pahlawan
+    biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
     
+    # Total dan ROASI
     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel + biaya_komik
     roasi = (penjualan_iklan / total_biaya_iklan_rinci) if total_biaya_iklan_rinci > 0 else 0
 
