@@ -46,8 +46,7 @@ def clean_variasi(text):
 def process_data(store_name, file_order, file_iklan, file_seller):
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
-    # df_iklan_raw = pd.read_csv(file_iklan, header=None) # Load tanpa header dulu untuk skip baris
-    df_iklan_raw = pd.read_csv(file_iklan, header=None, sep=None, engine='python')
+    df_iklan_raw = pd.read_csv(file_iklan, skiprows=7)
     df_seller = pd.read_csv(file_seller)
 
     # 2. PRE-PROCESS ORDER-ALL
@@ -65,14 +64,30 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         st.error("Kolom 'Waktu Pesanan Dibuat' tidak ditemukan di Order-all")
         return None
 
+    def clean_indo_currency(x):
+        if pd.isna(x): return 0
+        if isinstance(x, (int, float)): return x # Jika sudah angka, kembalikan langsung
+        # Jika string, bersihkan format Rp dan titik ribuan
+        x = str(x).replace('Rp', '').replace(' ', '').replace('.', '') # Hapus titik ribuan
+        x = x.replace(',', '.') # Ganti koma desimal jadi titik
+        try:
+            return float(x)
+        except:
+            return 0
+
+    # Terapkan pembersihan hanya ke kolom 'Total Harga Produk' dan 'Jumlah'
     if 'Total Harga Produk' in df_order.columns:
-        df_order['Total Harga Produk'] = pd.to_numeric(df_order['Total Harga Produk'], errors='coerce').fillna(0)
+        df_order['Total Harga Produk'] = df_order['Total Harga Produk'].apply(clean_indo_currency)
+    
+    if 'Jumlah' in df_order.columns:
+        df_order['Jumlah'] = df_order['Jumlah'].apply(clean_indo_currency)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     # Hapus 7 baris pertama (index 0-6), baris ke-8 (index 7) jadi header
-    new_header = df_iklan_raw.iloc[7]
-    df_iklan = df_iklan_raw[8:].copy()
-    df_iklan.columns = new_header
+    # new_header = df_iklan_raw.iloc[7]
+    # df_iklan = df_iklan_raw[8:].copy()
+    # df_iklan.columns = new_header
+    df_iklan.columns = df_iklan_raw.columns.str.strip()
     
     # Bersihkan Nama Iklan
     if 'Nama Iklan' in df_iklan.columns:
