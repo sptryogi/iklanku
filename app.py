@@ -66,16 +66,16 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     if 'Total Harga Produk' in df_order.columns:
         # Cek tipe data dulu. Jika sudah numeric (int/float), jangan di-replace string-nya
-        if df_order['Total Harga Produk'].dtype == 'object':
-            # Bersihkan hanya jika tipe data adalah string/object
-            df_order['Total Harga Produk'] = (
-                df_order['Total Harga Produk']
-                .astype(str)
-                .str.replace('Rp', '', regex=False)
-                .str.replace(' ', '', regex=False) # Hapus spasi
-                .str.replace('.', '', regex=False) # Hapus pemisah ribuan (indo)
-                .str.replace(',', '.', regex=False) # Ubah koma jadi titik desimal
-            )
+        # if df_order['Total Harga Produk'].dtype == 'object':
+        #     # Bersihkan hanya jika tipe data adalah string/object
+        #     df_order['Total Harga Produk'] = (
+        #         df_order['Total Harga Produk']
+        #         .astype(str)
+        #         .str.replace('Rp', '', regex=False)
+        #         .str.replace(' ', '', regex=False) # Hapus spasi
+        #         .str.replace('.', '', regex=False) # Hapus pemisah ribuan (indo)
+        #         .str.replace(',', '.', regex=False) # Ubah koma jadi titik desimal
+        #     )
         
         # Konversi ke angka
         df_order['Total Harga Produk'] = pd.to_numeric(df_order['Total Harga Produk'], errors='coerce').fillna(0)
