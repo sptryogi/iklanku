@@ -46,7 +46,7 @@ def clean_variasi(text):
 def process_data(store_name, file_order, file_iklan, file_seller):
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
-    df_iklan_raw = pd.read_csv(file_iklan, skiprows=7)
+    df_iklan = pd.read_csv(file_iklan, skiprows=7)
     df_seller = pd.read_csv(file_seller)
 
     # 2. PRE-PROCESS ORDER-ALL
@@ -87,7 +87,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # new_header = df_iklan_raw.iloc[7]
     # df_iklan = df_iklan_raw[8:].copy()
     # df_iklan.columns = new_header
-    df_iklan.columns = df_iklan_raw.columns.str.strip()
+    df_iklan.columns = df_iklan.columns.str.strip()
     
     # Bersihkan Nama Iklan
     if 'Nama Iklan' in df_iklan.columns:
