@@ -542,6 +542,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         curr_t3_row += 1
         
         # ROASA
+        roasa = total_omzet_aff / total_komisi_aff_val if total_komisi_aff_val > 0 else 0
         ws_lap.write(curr_t3_row, t3_col_start, "ROASA", fmt_col_name)
         ws_lap.merge_range(curr_t3_row, t3_col_start+1, curr_t3_row, t3_col_start+2, "", fmt_num)
         ws_lap.write(curr_t3_row, t3_col_start+3, roasa, fmt_num)
