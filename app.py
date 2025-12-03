@@ -673,8 +673,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     # --- TABEL 6: SUMMARY (M-Q) ---
     # Posisi: 2 baris spasi dibawah Organik
-    t6_row = curr_t5_row + 1
-    t6_col_start = 7 # M
+    t6_row = curr_t5_row + 2
+    t6_col_start = 7 # H
     
     summary_data = [
         ('Penjualan Keseluruhan', total_omzet_all, fmt_curr),
