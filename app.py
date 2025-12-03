@@ -166,8 +166,12 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # B. TABEL DINAMIS (AFFILIATE & ORGANIK)
     def agg_dynamic_hours(df_source, context=""):
+        # PERBAIKAN: Definisikan kolom wajib agar tidak Error saat data kosong
+        expected_cols = ['Jam', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN']
+        
         if df_source.empty:
-            return pd.DataFrame() # Return empty to handle manually later
+            # Kembalikan DataFrame kosong TAPI dengan nama kolom yang sudah disiapkan
+            return pd.DataFrame(columns=expected_cols) 
         
         grp_pesanan = df_source.groupby('Jam')['No. Pesanan'].nunique().reset_index(name='PESANAN')
         grp_metrics = df_source.groupby('Jam')[['Jumlah', 'Total Harga Produk']].sum().reset_index()
@@ -342,8 +346,29 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # F. TABEL SUMMARY
     # Hitung total-total untuk summary
-    total_omzet_all = tbl_iklan_data['OMZET PENJUALAN'].sum() + tbl_affiliate_data['OMZET PENJUALAN'].sum() + tbl_organik_data['OMZET PENJUALAN'].sum()
-    total_komisi_aff = tbl_affiliate_data['KOMISI'].sum()
+    # total_omzet_all = tbl_iklan_data['OMZET PENJUALAN'].sum() + tbl_affiliate_data['OMZET PENJUALAN'].sum() + tbl_organik_data['OMZET PENJUALAN'].sum()
+    # total_komisi_aff = tbl_affiliate_data['KOMISI'].sum()
+    # roasf = total_omzet_all / (total_biaya_iklan_rinci + total_komisi_aff) if (total_biaya_iklan_rinci + total_komisi_aff) > 0 else 0
+    total_omzet_all = 0
+    
+    # 1. Tambah Iklan
+    if 'OMZET PENJUALAN' in tbl_iklan_data.columns:
+        total_omzet_all += tbl_iklan_data['OMZET PENJUALAN'].sum()
+        
+    # 2. Tambah Affiliate (Cek empty dan kolom)
+    if not tbl_affiliate_data.empty and 'OMZET PENJUALAN' in tbl_affiliate_data.columns:
+        total_omzet_all += tbl_affiliate_data['OMZET PENJUALAN'].sum()
+        
+    # 3. Tambah Organik (Cek empty dan kolom)
+    if not tbl_organik_data.empty and 'OMZET PENJUALAN' in tbl_organik_data.columns:
+        total_omzet_all += tbl_organik_data['OMZET PENJUALAN'].sum()
+    
+    # Hitung Komisi
+    total_komisi_aff = 0
+    if not tbl_affiliate_data.empty and 'KOMISI' in tbl_affiliate_data.columns:
+        total_komisi_aff = tbl_affiliate_data['KOMISI'].sum()
+        
+    # Hitung ROASF
     roasf = total_omzet_all / (total_biaya_iklan_rinci + total_komisi_aff) if (total_biaya_iklan_rinci + total_komisi_aff) > 0 else 0
 
     # --- MEMBUAT FILE EXCEL ---
