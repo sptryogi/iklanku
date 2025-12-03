@@ -379,6 +379,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     fmt_text_left_bold = workbook.add_format({'border': 1, 'align': 'left', 'bold': True})
     fmt_curr_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True})
     fmt_num_bold = workbook.add_format({'border': 1, 'align': 'center', 'bold': True})
+
+    # TAMBAHKAN INI: Format angka dengan 2 desimal
+    fmt_decimal = workbook.add_format({'border': 1, 'num_format': '0.00', 'align': 'center'})
     
     # --- SHEET 1: LAPORAN IKLAN ---
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
@@ -456,7 +459,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     for label, val in rincian_items:
         # Tentukan format
         if 'Presentase' in label: fmt = fmt_percent
-        elif 'ROAS' in label: fmt = fmt_num
+        elif 'ROAS' in label: fmt = fmt_decimal
         elif 'Total' in label and 'Dilihat' in label: fmt = fmt_num
         elif 'Total' in label and 'Klik' in label: fmt = fmt_num
         else: fmt = fmt_curr # Default currency
@@ -547,7 +550,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # ROASA
         ws_lap.write(curr_t3_row, t3_col_start, "ROASA", fmt_col_name)
         ws_lap.merge_range(curr_t3_row, t3_col_start+1, curr_t3_row, t3_col_start+2, "", fmt_num)
-        ws_lap.write(curr_t3_row, t3_col_start+3, roasa, fmt_num)
+        ws_lap.write(curr_t3_row, t3_col_start+3, roasa, fmt_decimal)
         ws_lap.write(curr_t3_row, t3_col_start+4, "", fmt_num)
         curr_t3_row += 1
     
@@ -637,7 +640,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # # Total Eksemplar
     # ws_lap.write(curr_t5_row, 8, "TOTAL EKSEMPLAR", fmt_col_name)
     # ws_lap.write(curr_t5_row, 9, grp_rincian['Jumlah Eksemplar'].sum(), fmt_col_name)
-    t5_row = t4_row 
+    t5_row = curr_t2_row + 2 
     t5_col_start = 7 # H
     
     total_seluruh_pesanan_val = tbl_iklan_data['PESANAN'].sum()
@@ -670,14 +673,14 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     # --- TABEL 6: SUMMARY (M-Q) ---
     # Posisi: 2 baris spasi dibawah Organik
-    t6_row = last_row_organik + 3
-    t6_col_start = 12 # M
+    t6_row = curr_t5_row + 1
+    t6_col_start = 7 # M
     
     summary_data = [
         ('Penjualan Keseluruhan', total_omzet_all, fmt_curr),
         ('Total Biaya Iklan Klik', total_biaya_iklan_rinci, fmt_curr),
         ('Total Komisi Affiliate', total_komisi_aff, fmt_curr),
-        ('ROASF', roasf, fmt_num)
+        ('ROASF', roasf, fmt_decimal)
     ]
     
     for label, val, fmt in summary_data:
@@ -687,10 +690,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         else:
             use_fmt = fmt_num_bold # Default ke num bold untuk ROASF
             
-        ws_lap.merge_range(t6_row, t6_col_start, t6_row, t6_col_start+3, label, fmt_text_left)
-        ws_lap.write(t6_row, t6_col_start+4, val, fmt)
+        ws_lap.merge_range(t6_row, t6_col_start, t6_row, t6_col_start+1, label, fmt_text_left)
+        ws_lap.write(t6_row, t6_col_start+2, val, fmt)
         update_width(t6_col_start, label)
-        update_width(t6_col_start+4, str(val))
+        update_width(t6_col_start+2, str(val))
         t6_row += 1
 
     # --- APPLY AUTO WIDTH ---
