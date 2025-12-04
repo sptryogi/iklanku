@@ -69,8 +69,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # 2. PRE-PROCESS ORDER-ALL
     # Filter Status Pesanan != Batal dan Belum Bayar
     if 'Status Pesanan' in df_order.columns:
-        df_order = df_order[df_order['Status Pesanan'] != 'Batal'].copy()
-        df_order = df_order[df_order['Status Pesanan'] != 'Belum Bayar'].copy()
+        status_filter = ['Batal', 'Belum Bayar']
+        df_order = df_order[~df_order['Status Pesanan'].isin(status_filter)].copy()
+        # df_order = df_order[df_order['Status Pesanan'] != 'Batal'].copy()
+        # df_order = df_order[df_order['Status Pesanan'] != 'Belum Bayar'].copy()
     
     # Konversi kolom waktu
     if 'Waktu Pesanan Dibuat' in df_order.columns:
