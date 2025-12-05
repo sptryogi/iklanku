@@ -345,10 +345,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             # Buat copy agar tidak merusak data export
             df_seller_calc = df_seller.copy()
             
-            # Bersihkan format angka Pengeluaran(Rp)
-            # Gunakan fungsi clean_indo_currency_strict yang sudah dibuat sebelumnya
-            df_seller_calc['Pengeluaran(Rp)'] = df_seller_calc['Pengeluaran(Rp)'].apply(clean_indo_currency_strict)
-            
             # LANGKAH KUNCI: Sum Komisi per Kode Pesanan DULU biar jadi 1 baris per pesanan
             # Jadi misal Order ID 123 ada 3 baris komisi, disatukan dulu totalnya.
             komisi_per_order = df_seller_calc.groupby('Kode Pesanan')['Pengeluaran(Rp)'].sum().reset_index()
