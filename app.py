@@ -316,18 +316,18 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # SIAPKAN LIST ITEM UNTUK DITULIS KE EXCEL
     rincian_items = [
-        ('Total Iklan Dilihat', total_dilihat, fmt_num),
-        ('Total Jumlah Klik', total_klik, fmt_num),
-        ('Presentase Klik', persentase_klik, fmt_percent),
-        ('Penjualan Iklan', penjualan_iklan, fmt_curr),
+        ('Total Iklan Dilihat', total_dilihat),
+        ('Total Jumlah Klik', total_klik),
+        ('Presentase Klik', persentase_klik),
+        ('Penjualan Iklan', penjualan_iklan),
     ]
     
     # Masukkan rincian biaya dinamis ke list
     for label, val in rincian_biaya_khusus:
-        rincian_items.append((label, val, fmt_curr))
+        rincian_items.append((label, val))
         
     # Tambahkan ROASI di akhir
-    rincian_items.append(('ROASI', roasi, fmt_num))
+    rincian_items.append(('ROASI', roasi))
     
     # D. PREP AFFILIATE & ORGANIK DATA
     tbl_affiliate_data = agg_dynamic_hours(df_affiliate)
