@@ -63,12 +63,12 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             col_widths[col_idx] = width
             
     # 1. LOAD DATA
-    df_order = pd.read_excel(file_order, dtype={'Total Harga Produk': int, 'Jumlah': int, 'Harga Satuan': int})
-    df_iklan = pd.read_csv(file_iklan, skiprows=7, dtype={'Omzet Penjualan': int, 'Biaya': int})
+    df_order = pd.read_excel(file_order, dtype={'Total Harga Produk': str, 'Jumlah': str, 'Harga Satuan': str})
+    df_iklan = pd.read_csv(file_iklan, skiprows=7)
     
     # Cek apakah file_seller ada isinya (Optional)
     if file_seller is not None:
-        df_seller = pd.read_csv(file_seller, dtype={'Pengeluaran(Rp)': int})
+        df_seller = pd.read_csv(file_seller, dtype={'Pengeluaran(Rp)': str})
     else:
         # Jika tidak ada, buat DataFrame kosong dengan kolom minimal agar tidak error saat merge
         df_seller = pd.DataFrame(columns=['Kode Pesanan', 'Pengeluaran(Rp)'])
@@ -92,27 +92,29 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         return None
 
     df_order_export = df_order.copy()
-
-    def clean_indo_currency(x):
-        if pd.isna(x): return 0
-        if isinstance(x, (int, float)): return x # Jika sudah angka, kembalikan langsung
-        # Jika string, bersihkan format Rp dan titik ribuan
-        x = str(x).replace('Rp', '').replace(' ', '').replace('.', '') # Hapus titik ribuan
-        x = x.replace(',', '.') # Ganti koma desimal jadi titik
-        try:
-            return float(x)
-        except:
-            return 0
-
-    # Terapkan pembersihan hanya ke kolom 'Total Harga Produk' dan 'Jumlah'
-    # if 'Total Harga Produk' in df_order.columns:
-    #     df_order['Total Harga Produk'] = df_order['Total Harga Produk'].apply(clean_indo_currency)
+    # Order-all
+    for col in ['Total Harga Produk', 'Jumlah', 'Harga Satuan']:
+        if col in df_order.columns:
+            df_order[col] = (
+                df_order[col]
+                .astype(str)
+                .str.replace('Rp', '', regex=False)
+                .str.replace('.', '', regex=False)
+                .str.replace(',', '.', regex=False)
+            )
+            df_order[col] = pd.to_numeric(df_order[col], errors='coerce').fillna(0)
     
-    # if 'Jumlah' in df_order.columns:
-    #     df_order['Jumlah'] = df_order['Jumlah'].apply(clean_indo_currency)
+    # Seller conversion
+    if 'Pengeluaran(Rp)' in df_seller.columns:
+        df_seller['Pengeluaran(Rp)'] = (
+            df_seller['Pengeluaran(Rp)']
+            .astype(str)
+            .str.replace('Rp', '', regex=False)
+            .str.replace('.', '', regex=False)
+            .str.replace(',', '.', regex=False)
+        )
+        df_seller['Pengeluaran(Rp)'] = pd.to_numeric(df_seller['Pengeluaran(Rp)'], errors='coerce').fillna(0)
 
-    # if 'Harga Satuan' in df_order.columns:
-    #     df_order['Harga Satuan'] = df_order['Harga Satuan'].apply(clean_indo_currency)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     df_iklan.columns = df_iklan.columns.str.strip()
@@ -266,7 +268,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     if not tbl_affiliate_data.empty:
         if 'Kode Pesanan' in df_seller.columns and 'Pengeluaran(Rp)' in df_seller.columns:
             df_aff_merged = df_affiliate.merge(df_seller[['Kode Pesanan', 'Pengeluaran(Rp)']], left_on='No. Pesanan', right_on='Kode Pesanan', how='left')
-            # df_aff_merged['Pengeluaran(Rp)'] = df_aff_merged['Pengeluaran(Rp)'].apply(clean_indo_currency)
             komisi_per_jam = df_aff_merged.groupby('Jam')['Pengeluaran(Rp)'].sum().reset_index()
             tbl_affiliate_data = tbl_affiliate_data.merge(komisi_per_jam, on='Jam', how='left').fillna(0)
             tbl_affiliate_data.rename(columns={'Pengeluaran(Rp)': 'KOMISI'}, inplace=True)
