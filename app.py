@@ -115,6 +115,15 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         )
         df_seller['Pengeluaran(Rp)'] = pd.to_numeric(df_seller['Pengeluaran(Rp)'], errors='coerce').fillna(0)
 
+    # --- HITUNG EKSEMPLAR PER BARIS (GLOBAL) ---
+    # 1. Bersihkan Variasi
+    df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
+    # 2. Hitung Total Eksemplar (Eksemplar per unit * Jumlah qty)
+    # Pastikan Jumlah sudah angka (float/int) dari proses clean sebelumnya
+    df_order['Eksemplar_Total'] = df_order.apply(
+        lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Jumlah'], axis=1
+    )
+
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     df_iklan.columns = df_iklan.columns.str.strip()
@@ -164,10 +173,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     
     def agg_fixed_hours(df_source):
         if df_source.empty:
-            return pd.DataFrame({'Jam': range(24), 'PESANAN': 0, 'KUANTITAS': 0, 'OMZET PENJUALAN': 0})
+            return pd.DataFrame({'Jam': range(24), 'PESANAN': 0, 'KUANTITAS': 0, 'OMZET PENJUALAN': 0, 'JUMLAH EKSEMPLAR': 0})
         grp_pesanan = df_source.groupby('Jam')['No. Pesanan'].nunique().reset_index(name='PESANAN')
-        grp_metrics = df_source.groupby('Jam')[['Jumlah', 'Total Harga Produk']].sum().reset_index()
-        grp_metrics.rename(columns={'Jumlah': 'KUANTITAS', 'Total Harga Produk': 'OMZET PENJUALAN'}, inplace=True)
+        grp_metrics = df_source.groupby('Jam')[['Jumlah', 'Total Harga Produk', 'Eksemplar_Total']].sum().reset_index()
+        grp_metrics.rename(columns={'Jumlah': 'KUANTITAS', 'Total Harga Produk': 'OMZET PENJUALAN', 'Eksemplar_Total': 'JUMLAH EKSEMPLAR'}, inplace=True)
         merged = hours_fixed.merge(grp_pesanan, on='Jam', how='left').merge(grp_metrics, on='Jam', how='left')
         return merged.fillna(0)
 
@@ -176,20 +185,20 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # B. TABEL DINAMIS (AFFILIATE & ORGANIK)
     def agg_dynamic_hours(df_source, context=""):
         # PERBAIKAN: Definisikan kolom wajib agar tidak Error saat data kosong
-        expected_cols = ['Jam', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN']
+        expected_cols = ['Jam', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN', 'JUMLAH EKSEMPLAR']
         
         if df_source.empty:
             # Kembalikan DataFrame kosong TAPI dengan nama kolom yang sudah disiapkan
             return pd.DataFrame(columns=expected_cols) 
         
         grp_pesanan = df_source.groupby('Jam')['No. Pesanan'].nunique().reset_index(name='PESANAN')
-        grp_metrics = df_source.groupby('Jam')[['Jumlah', 'Total Harga Produk']].sum().reset_index()
-        grp_metrics.rename(columns={'Jumlah': 'KUANTITAS', 'Total Harga Produk': 'OMZET PENJUALAN'}, inplace=True)
+        grp_metrics = df_source.groupby('Jam')[['Jumlah', 'Total Harga Produk', 'Eksemplar_Total']].sum().reset_index()
+        grp_metrics.rename(columns={'Jumlah': 'KUANTITAS', 'Total Harga Produk': 'OMZET PENJUALAN', 'Eksemplar_Total': 'JUMLAH EKSEMPLAR'}, inplace=True)
         
         merged = grp_pesanan.merge(grp_metrics, on='Jam', how='left').fillna(0)
         merged = merged.sort_values('Jam')
         return merged
-
+        
     # Note: Jika user ingin SEMUA pesanan masuk sini, ganti df_ads_orders dengan df_order. 
     # Tapi berdasarkan logika tabel Organik, harusnya ini dipisah. Saya gunakan df_ads_orders.
 
@@ -222,45 +231,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # regex=True dan '.*' memungkinkan ada kata di tengah (misal: A5 Kertas Koran)
         mask = df_iklan['Nama Iklan'].str.contains(pattern, case=case_sensitive, regex=True, na=False)
         return df_iklan[mask]['Biaya'].sum()
-
-    # # Hitung Variabel Biaya
-    # biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
-    # biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
-    # total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
-    # biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
-    # biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
-    
-    # # --- LOGIKA TOKO UNTUK ITEM RINCIAN ---
-    # rincian_items = [
-    #     ('Total Iklan Dilihat', total_dilihat),
-    #     ('Total Jumlah Klik', total_klik),
-    #     ('Presentase Klik', persentase_klik),
-    #     ('Penjualan Iklan', penjualan_iklan)
-    # ]
-
-    # total_biaya_iklan_rinci = 0
-    
-    # if store_name == 'Human Store':
-    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-    #     rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
-    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-    #     rincian_items.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
-    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel + biaya_komik
-        
-    # elif store_name == 'Pasific BookStore':
-    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a6_pastel
-        
-    # elif store_name == 'Dama Store':
-    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-    #     rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
-    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel
-
-    # # Hitung ROASI
-    # roasi = (penjualan_iklan / total_biaya_iklan_rinci) if total_biaya_iklan_rinci > 0 else 0
-    # rincian_items.append(('ROASI', roasi))
 
     # --- LOGIKA BIAYA IKLAN PER TOKO ---
     rincian_biaya_khusus = [] # List tuple (Label, Value)
@@ -387,12 +357,12 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # 2. Group by Nama Produk & Variasi
     # Sum kolom 'Jumlah' untuk mendapatkan total qty produk tersebut
     grp_rincian = df_order.groupby(['Nama Produk', 'Variasi_Clean']).agg(
-        Jumlah_Pesanan=('Jumlah', 'sum') 
+        Kuantitas=('Jumlah', 'sum') 
     ).reset_index()
     
-    # 3. Hitung Eksemplar (Jumlah Pesanan * Eksemplar per variasi)
+    # 3. Hitung Eksemplar (Kuantitas * Eksemplar per variasi)
     grp_rincian['Jumlah Eksemplar'] = grp_rincian.apply(
-        lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Jumlah_Pesanan'], axis=1
+        lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Kuantitas'], axis=1
     )
 
     # F. TABEL SUMMARY
@@ -457,14 +427,14 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
     
     # Judul Utama
-    ws_lap.merge_range('A1:Q2', f'LAPORAN IKLAN {store_name.upper()}', fmt_header_main)
+    ws_lap.merge_range('A1:S2', f'LAPORAN IKLAN {store_name.upper()}', fmt_header_main)
     
     # --- TABEL 1: PESANAN IKLAN (A-F) ---
     start_row = 3 # Row 4
-    ws_lap.merge_range(start_row, 0, start_row, 5, 'PESANAN IKLAN', fmt_head_orange)
-    ws_lap.merge_range(start_row+1, 0, start_row+2, 5, report_date, fmt_date)
+    ws_lap.merge_range(start_row, 0, start_row, 6, 'PESANAN IKLAN', fmt_head_orange)
+    ws_lap.merge_range(start_row+1, 0, start_row+2, 6, report_date, fmt_date)
     
-    cols_t1 = ['JAM', 'LIHAT', 'KLIK', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN']
+    cols_t1 = ['JAM', 'LIHAT', 'KLIK', 'PESANAN', 'KUANTITAS', 'OMZET PENJUALAN', 'JUMLAH EKSEMPLAR']
     for i, col in enumerate(cols_t1):
         ws_lap.write(start_row+3, i, col, fmt_col_name)
         update_width(i, col)
@@ -482,6 +452,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         ws_lap.write(row_cursor, 3, row['PESANAN'], fmt_num)
         ws_lap.write(row_cursor, 4, row['KUANTITAS'], fmt_num)
         ws_lap.write(row_cursor, 5, row['OMZET PENJUALAN'], fmt_curr)
+        ws_lap.write(row_cursor, 6, row['JUMLAH EKSEMPLAR'], fmt_num)
 
         # Update widths
         update_width(3, row['PESANAN'])
@@ -492,14 +463,17 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         
     # Total Tabel 1
     ws_lap.write(row_cursor, 0, "TOTAL", fmt_col_name)
-    ws_lap.merge_range(row_cursor, 1, row_cursor, 2, "", fmt_col_name)
+
+    ws_lap.write(row_cursor, 1, total_dilihat, fmt_col_name) # Total Lihat
+    ws_lap.write(row_cursor, 2, total_klik, fmt_head_col_name)    # Total Klik
     ws_lap.write(row_cursor, 3, tbl_iklan_data['PESANAN'].sum(), fmt_col_name)
     ws_lap.write(row_cursor, 4, tbl_iklan_data['KUANTITAS'].sum(), fmt_col_name)
     ws_lap.write(row_cursor, 5, tbl_iklan_data['OMZET PENJUALAN'].sum(), fmt_col_name)
+    ws_lap.write(row_cursor, 6, tbl_iklan_data['JUMLAH EKSEMPLAR'].sum(), fmt_col_name)
     update_width(5, f"{tbl_iklan_data['OMZET PENJUALAN'].sum():,}")
     
     # --- TABEL 2: RINCIAN IKLAN KLIK (G-H) ---
-    t2_col_start = 7 # H
+    t2_col_start = 8 # H
     t2_row = start_row
     
     ws_lap.merge_range(t2_row, t2_col_start, t2_row, t2_col_start+1, 'RINCIAN IKLAN KLIK', fmt_head_brown)
@@ -521,11 +495,11 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         curr_t2_row += 1
 
     # --- TABEL 3: PESANAN AFFILIATE (L-P) ---
-    t3_col_start = 12 # M
+    t3_col_start = 13 # M
     t3_row = start_row
-    t3_cols = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan', 'Komisi']
+    t3_cols = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan', 'Komisi', 'Jumlah Eksemplar']
     
-    ws_lap.merge_range(t3_row, t3_col_start, t3_row, t3_col_start+4, 'PESANAN AFFILIATE', fmt_head_yellow)
+    ws_lap.merge_range(t3_row, t3_col_start, t3_row, t3_col_start+5, 'PESANAN AFFILIATE', fmt_head_yellow)
     for i, col in enumerate(t3_cols):
         ws_lap.write(t3_row+1, t3_col_start+i, col, fmt_col_name)
         update_width(t3_col_start+i, col)
@@ -535,7 +509,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # Jika Data Kosong, buat 5 baris kosong
     if tbl_affiliate_data.empty:
         for _ in range(5):
-             for i in range(5):
+             for i in range(6):
                  ws_lap.write(curr_t3_row, t3_col_start+i, "", fmt_num)
              curr_t3_row += 1
     else:
@@ -545,6 +519,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             ws_lap.write(curr_t3_row, t3_col_start+2, row['KUANTITAS'], fmt_num)
             ws_lap.write(curr_t3_row, t3_col_start+3, row['OMZET PENJUALAN'], fmt_curr)
             ws_lap.write(curr_t3_row, t3_col_start+4, row['KOMISI'], fmt_curr)
+            ws_lap.write(curr_t3_row, t3_col_start+5, row['JUMLAH EKSEMPLAR'], fmt_num)
             
             update_width(t3_col_start, f"{int(row['Jam']):02d}:00")
             update_width(t3_col_start+3, f"{row['OMZET PENJUALAN']:,}")
@@ -556,7 +531,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         ws_lap.write(curr_t3_row, t3_col_start+1, tbl_affiliate_data['PESANAN'].sum(), fmt_col_name)
         ws_lap.write(curr_t3_row, t3_col_start+2, tbl_affiliate_data['KUANTITAS'].sum(), fmt_col_name)
         ws_lap.write(curr_t3_row, t3_col_start+3, tbl_affiliate_data['OMZET PENJUALAN'].sum(), fmt_col_name)
-        ws_lap.write(curr_t3_row, t3_col_start+4, tbl_affiliate_data['KOMISI'].sum(), fmt_col_name)
+        ws_lap.write(curr_t3_row, t3_col_start+4, tbl_affiliate_data['KOMISI'].sum(), fmt_col_name),
+        ws_lap.write(curr_t3_row, t3_col_start+5, tbl_affiliate_data['JUMLAH EKSEMPLAR'].sum(), fmt_col_name)
         total_omzet_aff = tbl_affiliate_data['OMZET PENJUALAN'].sum()
         total_komisi_aff_val = tbl_affiliate_data['KOMISI'].sum()
         roasa = total_omzet_aff / total_komisi_aff_val if total_komisi_aff_val > 0 else 0
@@ -574,9 +550,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- TABEL 4: PESANAN ORGANIK (M-P) ---
     t4_row = last_row_affiliate + 2
     t4_col_start = t3_col_start # M
-    t4_cols = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan']
+    t4_cols = ['Jam', 'Pesanan', 'Kuantitas', 'Omzet Penjualan', 'Jumlah Eksemplar']
     
-    ws_lap.merge_range(t4_row, t4_col_start, t4_row, t4_col_start+3, 'PESANAN ORGANIK', fmt_head_pink)
+    ws_lap.merge_range(t4_row, t4_col_start, t4_row, t4_col_start+4, 'PESANAN ORGANIK', fmt_head_pink)
     for i, col in enumerate(t4_cols):
         ws_lap.write(t4_row+1, t4_col_start+i, col, fmt_col_name)
         update_width(t4_col_start+i, col)
@@ -584,7 +560,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     curr_t4_row = t4_row + 2
     if tbl_organik_data.empty:
         for _ in range(5):
-             for i in range(4):
+             for i in range(5):
                  ws_lap.write(curr_t4_row, t4_col_start+i, "", fmt_num)
              curr_t4_row += 1
     else:
@@ -593,6 +569,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             ws_lap.write(curr_t4_row, t4_col_start+1, row['PESANAN'], fmt_num)
             ws_lap.write(curr_t4_row, t4_col_start+2, row['KUANTITAS'], fmt_num)
             ws_lap.write(curr_t4_row, t4_col_start+3, row['OMZET PENJUALAN'], fmt_curr)
+            ws_lap.write(curr_t4_row, t4_col_start+4, row['JUMLAH EKSEMPLAR'], fmt_num)
             update_width(t4_col_start, f"{int(row['Jam']):02d}:00")
             update_width(t4_col_start+3, f"{row['OMZET PENJUALAN']:,}")
             curr_t4_row += 1
@@ -602,13 +579,14 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         ws_lap.write(curr_t4_row, t4_col_start+1, tbl_organik_data['PESANAN'].sum(), fmt_col_name)
         ws_lap.write(curr_t4_row, t4_col_start+2, tbl_organik_data['KUANTITAS'].sum(), fmt_col_name)
         ws_lap.write(curr_t4_row, t4_col_start+3, tbl_organik_data['OMZET PENJUALAN'].sum(), fmt_col_name)
+        ws_lap.write(curr_t4_row, t4_col_start+4, tbl_organik_data['JUMLAH EKSEMPLAR'].sum(), fmt_col_name)
         curr_t4_row += 1
         
     last_row_organik = curr_t4_row
 
     # --- TABEL 5: RINCIAN SELURUH PESANAN (H-K) ---
     t5_row = curr_t2_row + 2 
-    t5_col_start = 7 # H
+    t5_col_start = 8 # H
     
     total_seluruh_pesanan_val = tbl_iklan_data['PESANAN'].sum()
     if not tbl_affiliate_data.empty: total_seluruh_pesanan_val += tbl_affiliate_data['PESANAN'].sum()
@@ -618,7 +596,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ws_lap.write(t5_row, t5_col_start+1, total_seluruh_pesanan_val, fmt_header_table)
     ws_lap.merge_range(t5_row, t5_col_start+2, t5_row, t5_col_start+3, "", fmt_header_table)
     
-    t5_cols = ['Nama Produk', 'Variasi', 'Jumlah Pesanan', 'Jumlah Eksemplar']
+    t5_cols = ['Nama Produk', 'Variasi', 'Kuantitas', 'Jumlah Eksemplar']
     for i, col in enumerate(t5_cols):
         ws_lap.write(t5_row+1, t5_col_start+i, col, fmt_col_name)
         update_width(t5_col_start+i, col)
@@ -627,7 +605,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     for idx, row in grp_rincian.iterrows():
         ws_lap.write(curr_t5_row, t5_col_start, row['Nama Produk'], fmt_text_left)
         ws_lap.write(curr_t5_row, t5_col_start+1, row['Variasi_Clean'], fmt_num)
-        ws_lap.write(curr_t5_row, t5_col_start+2, row['Jumlah_Pesanan'], fmt_num)
+        ws_lap.write(curr_t5_row, t5_col_start+2, row['Kuantitas'], fmt_num)
         ws_lap.write(curr_t5_row, t5_col_start+3, row['Jumlah Eksemplar'], fmt_num)
         
         update_width(t5_col_start, row['Nama Produk'])
@@ -641,7 +619,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- TABEL 6: SUMMARY (M-Q) ---
     # Posisi: 2 baris spasi dibawah Organik
     t6_row = curr_t5_row + 2
-    t6_col_start = 7 # H
+    t6_col_start = 8 # H
     
     summary_data = [
         ('Penjualan Keseluruhan', total_omzet_all, fmt_curr),
