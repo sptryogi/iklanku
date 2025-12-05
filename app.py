@@ -342,41 +342,41 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         #     tbl_affiliate_data['KOMISI'] = 0
         if 'Kode Pesanan' in df_seller.columns and 'Pengeluaran(Rp)' in df_seller.columns:
         
-        # Buat copy agar tidak merusak data export
-        df_seller_calc = df_seller.copy()
-        
-        # Bersihkan format angka Pengeluaran(Rp)
-        # Gunakan fungsi clean_indo_currency_strict yang sudah dibuat sebelumnya
-        df_seller_calc['Pengeluaran(Rp)'] = df_seller_calc['Pengeluaran(Rp)'].apply(clean_indo_currency_strict)
-        
-        # LANGKAH KUNCI: Sum Komisi per Kode Pesanan DULU biar jadi 1 baris per pesanan
-        # Jadi misal Order ID 123 ada 3 baris komisi, disatukan dulu totalnya.
-        komisi_per_order = df_seller_calc.groupby('Kode Pesanan')['Pengeluaran(Rp)'].sum().reset_index()
-        
-        # 2. Siapkan Mapping Jam dari Order Affiliate
-        # Kita butuh info: Order ID X itu jam berapa?
-        # Ambil unik No. Pesanan dan Jam saja (Drop duplicate produk dalam 1 order)
-        order_time_map = df_affiliate[['No. Pesanan', 'Jam']].drop_duplicates()
-        
-        # 3. Gabungkan Data Komisi Bersih dengan Jam
-        # Merge: Order ID (yang ada Jam) + Total Komisi (dari Seller)
-        merged_komisi = order_time_map.merge(
-            komisi_per_order, 
-            left_on='No. Pesanan', 
-            right_on='Kode Pesanan', 
-            how='inner' # Hanya ambil yang datanya ada di kedua file
-        )
-        
-        # 4. Group by Jam lagi untuk masuk ke Tabel Laporan
-        komisi_per_jam = merged_komisi.groupby('Jam')['Pengeluaran(Rp)'].sum().reset_index()
-        komisi_per_jam.rename(columns={'Pengeluaran(Rp)': 'KOMISI'}, inplace=True)
-        
-        # 5. Masukkan ke Tabel Akhir
-        tbl_affiliate_data = tbl_affiliate_data.merge(komisi_per_jam, on='Jam', how='left').fillna(0)
-        
-    else:
-        # Jika file seller tidak ada atau kosong
-        tbl_affiliate_data['KOMISI'] = 0
+            # Buat copy agar tidak merusak data export
+            df_seller_calc = df_seller.copy()
+            
+            # Bersihkan format angka Pengeluaran(Rp)
+            # Gunakan fungsi clean_indo_currency_strict yang sudah dibuat sebelumnya
+            df_seller_calc['Pengeluaran(Rp)'] = df_seller_calc['Pengeluaran(Rp)'].apply(clean_indo_currency_strict)
+            
+            # LANGKAH KUNCI: Sum Komisi per Kode Pesanan DULU biar jadi 1 baris per pesanan
+            # Jadi misal Order ID 123 ada 3 baris komisi, disatukan dulu totalnya.
+            komisi_per_order = df_seller_calc.groupby('Kode Pesanan')['Pengeluaran(Rp)'].sum().reset_index()
+            
+            # 2. Siapkan Mapping Jam dari Order Affiliate
+            # Kita butuh info: Order ID X itu jam berapa?
+            # Ambil unik No. Pesanan dan Jam saja (Drop duplicate produk dalam 1 order)
+            order_time_map = df_affiliate[['No. Pesanan', 'Jam']].drop_duplicates()
+            
+            # 3. Gabungkan Data Komisi Bersih dengan Jam
+            # Merge: Order ID (yang ada Jam) + Total Komisi (dari Seller)
+            merged_komisi = order_time_map.merge(
+                komisi_per_order, 
+                left_on='No. Pesanan', 
+                right_on='Kode Pesanan', 
+                how='inner' # Hanya ambil yang datanya ada di kedua file
+            )
+            
+            # 4. Group by Jam lagi untuk masuk ke Tabel Laporan
+            komisi_per_jam = merged_komisi.groupby('Jam')['Pengeluaran(Rp)'].sum().reset_index()
+            komisi_per_jam.rename(columns={'Pengeluaran(Rp)': 'KOMISI'}, inplace=True)
+            
+            # 5. Masukkan ke Tabel Akhir
+            tbl_affiliate_data = tbl_affiliate_data.merge(komisi_per_jam, on='Jam', how='left').fillna(0)
+            
+        else:
+            # Jika file seller tidak ada atau kosong
+            tbl_affiliate_data['KOMISI'] = 0
             
     tbl_organik_data = agg_dynamic_hours(df_organic)
 
