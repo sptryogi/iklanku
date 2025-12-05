@@ -105,14 +105,14 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             return 0
 
     # Terapkan pembersihan hanya ke kolom 'Total Harga Produk' dan 'Jumlah'
-    if 'Total Harga Produk' in df_order.columns:
-        df_order['Total Harga Produk'] = df_order['Total Harga Produk'].apply(clean_indo_currency)
+    # if 'Total Harga Produk' in df_order.columns:
+    #     df_order['Total Harga Produk'] = df_order['Total Harga Produk'].apply(clean_indo_currency)
     
-    if 'Jumlah' in df_order.columns:
-        df_order['Jumlah'] = df_order['Jumlah'].apply(clean_indo_currency)
+    # if 'Jumlah' in df_order.columns:
+    #     df_order['Jumlah'] = df_order['Jumlah'].apply(clean_indo_currency)
 
-    if 'Harga Satuan' in df_order.columns:
-        df_order['Harga Satuan'] = df_order['Harga Satuan'].apply(clean_indo_currency)
+    # if 'Harga Satuan' in df_order.columns:
+    #     df_order['Harga Satuan'] = df_order['Harga Satuan'].apply(clean_indo_currency)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     df_iklan.columns = df_iklan.columns.str.strip()
@@ -266,7 +266,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     if not tbl_affiliate_data.empty:
         if 'Kode Pesanan' in df_seller.columns and 'Pengeluaran(Rp)' in df_seller.columns:
             df_aff_merged = df_affiliate.merge(df_seller[['Kode Pesanan', 'Pengeluaran(Rp)']], left_on='No. Pesanan', right_on='Kode Pesanan', how='left')
-            df_aff_merged['Pengeluaran(Rp)'] = df_aff_merged['Pengeluaran(Rp)'].apply(clean_indo_currency)
+            # df_aff_merged['Pengeluaran(Rp)'] = df_aff_merged['Pengeluaran(Rp)'].apply(clean_indo_currency)
             komisi_per_jam = df_aff_merged.groupby('Jam')['Pengeluaran(Rp)'].sum().reset_index()
             tbl_affiliate_data = tbl_affiliate_data.merge(komisi_per_jam, on='Jam', how='left').fillna(0)
             tbl_affiliate_data.rename(columns={'Pengeluaran(Rp)': 'KOMISI'}, inplace=True)
