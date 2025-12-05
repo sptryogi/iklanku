@@ -26,11 +26,18 @@ def extract_time_hour(dt):
 def extract_eksemplar(variasi_text):
     if not isinstance(variasi_text, str):
         return 1
-    # Cari angka dalam variasi, misal "PAKET ISI 3" -> 3
-    match = re.search(r'(\d+)', variasi_text)
+    
+    v = variasi_text.strip().upper()
+    
+    # Logika Baru: Cari kata kunci PAKET ISI X, PAKET X, atau ISI X
+    # Regex menangkap angka setelah kata kunci tersebut
+    match = re.search(r'(?:PAKET|ISI)\s*(?:ISI\s*)?(\d+)', v)
+    
     if match:
         return int(match.group(1))
-    return 1 # Default jika tidak ada angka
+    
+    # Jika tidak ada kata kunci (Satuan, A5, Random, dll), hitung 1
+    return 1
 
 def clean_variasi(text):
     if not isinstance(text, str) or pd.isna(text) or text == '':
@@ -54,6 +61,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         current_max = col_widths.get(col_idx, 0)
         if width > current_max:
             col_widths[col_idx] = width
+
+    df_order_export = df_order.copy()
             
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
@@ -65,6 +74,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     else:
         # Jika tidak ada, buat DataFrame kosong dengan kolom minimal agar tidak error saat merge
         df_seller = pd.DataFrame(columns=['Kode Pesanan', 'Pengeluaran(Rp)'])
+
+    df_seller_export = df_seller.copy()
 
     # 2. PRE-PROCESS ORDER-ALL
     # Filter Status Pesanan != Batal dan Belum Bayar
@@ -105,6 +116,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     df_iklan.columns = df_iklan.columns.str.strip()
+    df_iklan_export = df_iklan.copy()
     
     # Bersihkan Nama Iklan
     if 'Nama Iklan' in df_iklan.columns:
@@ -264,17 +276,20 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     tbl_organik_data = agg_dynamic_hours(df_organic)
 
     # E. TABEL RINCIAN SELURUH PESANAN (Product Level)
-    df_unique_orders = df_order.drop_duplicates(subset=['No. Pesanan'], keep='first').copy()
-    
-    if 'Nama Variasi' in df_unique_orders.columns:
-        df_unique_orders['Variasi_Clean'] = df_unique_orders['Nama Variasi'].apply(clean_variasi)
+    # 1. Siapkan kolom variasi bersih
+    # df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
+    if 'Nama Variasi' in df_order.columns:
+        df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
     else:
-        df_unique_orders['Variasi_Clean'] = ''
-
-    grp_rincian = df_unique_orders.groupby(['Nama Produk', 'Variasi_Clean']).agg(
-        Jumlah_Pesanan=('No. Pesanan', 'count')
+        df_order['Variasi_Clean'] = ''
+    
+    # 2. Group by Nama Produk & Variasi
+    # Sum kolom 'Jumlah' untuk mendapatkan total qty produk tersebut
+    grp_rincian = df_order.groupby(['Nama Produk', 'Variasi_Clean']).agg(
+        Jumlah_Pesanan=('Jumlah', 'sum') 
     ).reset_index()
     
+    # 3. Hitung Eksemplar (Jumlah Pesanan * Eksemplar per variasi)
     grp_rincian['Jumlah Eksemplar'] = grp_rincian.apply(
         lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Jumlah_Pesanan'], axis=1
     )
@@ -555,7 +570,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
     # --- SIMPAN SHEET LAINNYA ---
     # 1. order-all (dengan highlight)
-    df_order.to_excel(writer, sheet_name='order-all', index=False)
+    df_order_export['is_affiliate'] = df_order['is_affiliate']
+    df_order_export['is_iklan_product'] = df_order['is_iklan_product']
+    
+    df_order_export.to_excel(writer, sheet_name='order-all', index=False)
     ws_order = workbook.get_worksheet_by_name('order-all')
     
     # Format Highlight
@@ -567,9 +585,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # Kita loop df_order untuk nulis ulang baris dengan format yang sesuai
     
     # Get columns for rewrite
-    columns = df_order.columns.tolist()
+    columns = df_order_export.columns.tolist()
     
-    for row_idx, row_data in df_order.iterrows():
+    for row_idx, row_data in df_order_export.iterrows():
         row_fmt = None
         if row_data['is_affiliate']:
             row_fmt = fmt_yellow
@@ -593,10 +611,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
                         ws_order.write(row_idx + 1, col_idx, val, row_fmt)
 
     # 2. Iklan klik (Cleaned)
-    df_iklan.to_excel(writer, sheet_name='Iklan klik', index=False)
+    df_iklan_export.to_excel(writer, sheet_name='Iklan klik', index=False)
     
     # 3. Seller conversion (Raw)
-    df_seller.to_excel(writer, sheet_name='Seller conversion', index=False)
+    df_seller_export.to_excel(writer, sheet_name='Seller conversion', index=False)
 
     writer.close()
     output.seek(0)
