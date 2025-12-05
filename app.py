@@ -61,8 +61,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         current_max = col_widths.get(col_idx, 0)
         if width > current_max:
             col_widths[col_idx] = width
-
-    df_order_export = df_order.copy()
             
     # 1. LOAD DATA
     df_order = pd.read_excel(file_order)
@@ -92,6 +90,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     else:
         st.error("Kolom 'Waktu Pesanan Dibuat' tidak ditemukan di Order-all")
         return None
+
+    df_order_export = df_order.copy()
 
     def clean_indo_currency(x):
         if pd.isna(x): return 0
