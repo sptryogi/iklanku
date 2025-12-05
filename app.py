@@ -223,44 +223,111 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         mask = df_iklan['Nama Iklan'].str.contains(pattern, case=case_sensitive, regex=True, na=False)
         return df_iklan[mask]['Biaya'].sum()
 
-    # Hitung Variabel Biaya
-    biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
-    biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
-    total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
-    biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
-    biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
+    # # Hitung Variabel Biaya
+    # biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
+    # biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
+    # total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
+    # biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
+    # biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
     
-    # --- LOGIKA TOKO UNTUK ITEM RINCIAN ---
-    rincian_items = [
-        ('Total Iklan Dilihat', total_dilihat),
-        ('Total Jumlah Klik', total_klik),
-        ('Presentase Klik', persentase_klik),
-        ('Penjualan Iklan', penjualan_iklan)
-    ]
+    # # --- LOGIKA TOKO UNTUK ITEM RINCIAN ---
+    # rincian_items = [
+    #     ('Total Iklan Dilihat', total_dilihat),
+    #     ('Total Jumlah Klik', total_klik),
+    #     ('Presentase Klik', persentase_klik),
+    #     ('Penjualan Iklan', penjualan_iklan)
+    # ]
 
-    total_biaya_iklan_rinci = 0
+    # total_biaya_iklan_rinci = 0
     
-    if store_name == 'Human Store':
-        rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-        rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
-        rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-        rincian_items.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
-        total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel + biaya_komik
+    # if store_name == 'Human Store':
+    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
+    #     rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
+    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
+    #     rincian_items.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
+    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel + biaya_komik
         
-    elif store_name == 'Pasific BookStore':
-        rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-        rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-        total_biaya_iklan_rinci = biaya_a5_koran + biaya_a6_pastel
+    # elif store_name == 'Pasific BookStore':
+    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
+    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
+    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a6_pastel
         
-    elif store_name == 'Dama Store':
-        rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
-        rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
-        rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
-        total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel
+    # elif store_name == 'Dama Store':
+    #     rincian_items.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
+    #     rincian_items.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
+    #     rincian_items.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
+    #     total_biaya_iklan_rinci = biaya_a5_koran + biaya_a5_koran_pkt7 + biaya_a6_pastel
 
+    # # Hitung ROASI
+    # roasi = (penjualan_iklan / total_biaya_iklan_rinci) if total_biaya_iklan_rinci > 0 else 0
+    # rincian_items.append(('ROASI', roasi))
+
+    # --- LOGIKA BIAYA IKLAN PER TOKO ---
+    rincian_biaya_khusus = [] # List tuple (Label, Value)
+
+    if "Pasific BookStore" in toko:
+        # Pasific Logic
+        # 1. A5 Kertas Koran
+        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
+        
+        # 2. A6 Kertas HVS
+        b_a6_hvs = get_biaya_regex(r"A6.*Kertas.*HVS", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A6 Kertas HVS', b_a6_hvs))
+        
+    elif "Dama Store" in toko:
+        # Dama Logic
+        # 1. A5 Kertas Koran
+        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
+        
+        # 2. A6 HVS (Sesuai request: "A6 HVS")
+        b_a6_hvs = get_biaya_regex(r"A6.*HVS", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A6 HVS', b_a6_hvs))
+        
+        # 3. A6 Edisi Tahlil
+        b_a6_tahlil = get_biaya_regex(r"A6.*EDISI.*TAHLIL", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
+        
+    else:
+        # HUMAN STORE (Default/Original Logic)
+        # 1. A5 Koran (Kapital WAKAF)
+        biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
+        
+        # 2. A6 Pastel
+        biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
+        
+        # 3. A5 Koran Paket 7 (Sisa dari general A5 Koran dikurangi Kapital)
+        total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
+        biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
+        
+        # 4. Komik
+        biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
+
+    # Hitung Total Biaya Rinci
+    total_biaya_iklan_rinci = sum([val for label, val in rincian_biaya_khusus])
+    
     # Hitung ROASI
     roasi = (penjualan_iklan / total_biaya_iklan_rinci) if total_biaya_iklan_rinci > 0 else 0
-    rincian_items.append(('ROASI', roasi))
+
+    # SIAPKAN LIST ITEM UNTUK DITULIS KE EXCEL
+    rincian_items = [
+        ('Total Iklan Dilihat', total_dilihat, fmt_num),
+        ('Total Jumlah Klik', total_klik, fmt_num),
+        ('Presentase Klik', persentase_klik, fmt_percent),
+        ('Penjualan Iklan', penjualan_iklan, fmt_curr),
+    ]
+    
+    # Masukkan rincian biaya dinamis ke list
+    for label, val in rincian_biaya_khusus:
+        rincian_items.append((label, val, fmt_curr))
+        
+    # Tambahkan ROASI di akhir
+    rincian_items.append(('ROASI', roasi, fmt_num))
     
     # D. PREP AFFILIATE & ORGANIK DATA
     tbl_affiliate_data = agg_dynamic_hours(df_affiliate)
