@@ -465,7 +465,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ws_lap.write(row_cursor, 0, "TOTAL", fmt_col_name)
 
     ws_lap.write(row_cursor, 1, total_dilihat, fmt_col_name) # Total Lihat
-    ws_lap.write(row_cursor, 2, total_klik, fmt_head_col_name)    # Total Klik
+    ws_lap.write(row_cursor, 2, total_klik, fmt_col_name)    # Total Klik
     ws_lap.write(row_cursor, 3, tbl_iklan_data['PESANAN'].sum(), fmt_col_name)
     ws_lap.write(row_cursor, 4, tbl_iklan_data['KUANTITAS'].sum(), fmt_col_name)
     ws_lap.write(row_cursor, 5, tbl_iklan_data['OMZET PENJUALAN'].sum(), fmt_col_name)
