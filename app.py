@@ -63,12 +63,12 @@ def process_data(store_name, file_order, file_iklan, file_seller):
             col_widths[col_idx] = width
             
     # 1. LOAD DATA
-    df_order = pd.read_excel(file_order)
-    df_iklan = pd.read_csv(file_iklan, skiprows=7)
+    df_order = pd.read_excel(file_order, dtype={'Total Harga Produk': str, 'Jumlah': str, 'Harga Satuan': str})
+    df_iklan = pd.read_csv(file_iklan, skiprows=7, dtype={'Omzet Penjualan': str, 'Biaya': str})
     
     # Cek apakah file_seller ada isinya (Optional)
     if file_seller is not None:
-        df_seller = pd.read_csv(file_seller)
+        df_seller = pd.read_csv(file_seller, dtype={'Pengeluaran(Rp)': str})
     else:
         # Jika tidak ada, buat DataFrame kosong dengan kolom minimal agar tidak error saat merge
         df_seller = pd.DataFrame(columns=['Kode Pesanan', 'Pengeluaran(Rp)'])
