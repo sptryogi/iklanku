@@ -235,8 +235,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- LOGIKA BIAYA IKLAN PER TOKO ---
     rincian_biaya_khusus = [] # List tuple (Label, Value)
 
-    if "Pasific BookStore" in toko:
-        # Pasific Logic
+    if "Pacific BookStore" in toko:
+        # Pacific Logic
         # 1. A5 Kertas Koran
         b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
@@ -705,7 +705,7 @@ st.title("🛒 IklanKu - Generator Laporan Otomatis")
 st.markdown("---")
 
 # Input Toko
-toko = st.selectbox("Pilih Toko:", ["Human Store", "Pasific BookStore", "Dama Store"])
+toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific BookStore", "Dama Store"])
 
 # Input File
 col1, col2, col3 = st.columns(3)
