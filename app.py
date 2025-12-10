@@ -275,8 +275,13 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         rincian_biaya_khusus.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
         
         # 4. Komik
-        biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
+        # biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
+        # rincian_biaya_khusus.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
+        # 4. Al Aqeel Gold (MENGGANTIKAN KOMIK PAHLAWAN)
+        # Mendeteksi: "Alquran Cover Emas Kertas HVS Al Aqeel Gold Murah"
+        # Kita pakai regex "Al Aqeel Gold" atau "Cover Emas" agar match
+        biaya_gold = get_biaya_regex(r"Al Aqeel Gold", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
     # Hitung Total Biaya Rinci
     total_biaya_iklan_rinci = sum([val for label, val in rincian_biaya_khusus])
