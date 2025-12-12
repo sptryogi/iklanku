@@ -245,6 +245,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         b_a6_hvs = get_biaya_regex(r"A6.*Kertas.*HVS", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 Kertas HVS', b_a6_hvs))
 
+        # 3. A6 Edisi Tahlil
+        b_a6_tahlil = get_biaya_regex(r"Edisi.*Tahlilan.*A6.*Kertas.*HVS.", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
+
         biaya_gold = get_biaya_regex(r"Alquran GOLD", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
         
