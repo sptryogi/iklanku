@@ -244,6 +244,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # 2. A6 Kertas HVS
         b_a6_hvs = get_biaya_regex(r"A6.*Kertas.*HVS", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 Kertas HVS', b_a6_hvs))
+
+        biaya_gold = get_biaya_regex(r"Alquran GOLD", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
         
     elif "Dama Store" in toko:
         # Dama Logic
@@ -258,6 +261,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # 3. A6 Edisi Tahlil
         b_a6_tahlil = get_biaya_regex(r"A6.*EDISI.*TAHLIL", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
+
+        biaya_gold = get_biaya_regex(r"Al Aqeel Gold", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
         
     else:
         # HUMAN STORE (Default/Original Logic)
@@ -277,6 +283,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # 4. Komik
         # biaya_komik = get_biaya_regex(r"Komik Pahlawan", case_sensitive=False)
         # rincian_biaya_khusus.append(('Biaya Iklan Komik Pahlawan', biaya_komik))
+    
         # 4. Al Aqeel Gold (MENGGANTIKAN KOMIK PAHLAWAN)
         # Mendeteksi: "Alquran Cover Emas Kertas HVS Al Aqeel Gold Murah"
         # Kita pakai regex "Al Aqeel Gold" atau "Cover Emas" agar match
