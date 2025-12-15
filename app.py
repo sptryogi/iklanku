@@ -272,8 +272,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     else:
         # HUMAN STORE (Default/Original Logic)
         # 1. A5 Koran (Kapital WAKAF)
-        biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
-        rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
+        # biaya_a5_koran = get_biaya_regex(r"A5.*KORAN", case_sensitive=True)
+        # rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
         
         # 2. A6 Pastel
         biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
