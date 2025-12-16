@@ -280,8 +280,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         rincian_biaya_khusus.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
         
         # 3. A5 Koran Paket 7 (Sisa dari general A5 Koran dikurangi Kapital)
-        total_a5_general = get_biaya_regex(r"A5.*Koran", case_sensitive=False)
-        biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
+        total_a5_general = get_biaya_regex(r"Paket.*Alquran.*khusus.*A5.*Kertas.*Koran", case_sensitive=False)
+        # biaya_a5_koran_pkt7 = total_a5_general - biaya_a5_koran
+        biaya_a5_koran_pkt7 = total_a5_general
         rincian_biaya_khusus.append(('Biaya Iklan A5 Koran Paket 7', biaya_a5_koran_pkt7))
         
         # 4. Komik
