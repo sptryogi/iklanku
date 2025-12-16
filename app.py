@@ -235,7 +235,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     # --- LOGIKA BIAYA IKLAN PER TOKO ---
     rincian_biaya_khusus = [] # List tuple (Label, Value)
 
-    if "Pacific BookStore" in toko:
+    if "Pacific Bookstore" in toko:
         # Pacific Logic
         # 1. A5 Kertas Koran
         b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
@@ -252,8 +252,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Alquran.*GOLD.*Hard.*Cover", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
         
-    elif "Dama Store" in toko:
-        # Dama Logic
+    elif "DAMA.ID STORE" in toko:
+        # DAMA.ID STORE Logic
         # 1. A5 Kertas Koran
         b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
@@ -444,7 +444,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
     
     # Judul Utama
-    ws_lap.merge_range('A1:S2', f'LAPORAN IKLAN {store_name.upper()}', fmt_header_main)
+    ws_lap.merge_range('A1:S2', f'LAPORAN IKLAN {store_name}', fmt_header_main)
     
     # --- TABEL 1: PESANAN IKLAN (A-F) ---
     start_row = 3 # Row 4
@@ -722,7 +722,7 @@ st.title("🛒 IklanKu - Generator Laporan Otomatis")
 st.markdown("---")
 
 # Input Toko
-toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific BookStore", "Dama Store"])
+toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE"])
 
 # Input File
 col1, col2, col3 = st.columns(3)
