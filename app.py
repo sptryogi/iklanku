@@ -254,8 +254,6 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Alquran.*GOLD.*Hard.*Cover", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Al.*Quran.*Mushaf.*Al-Aqeel.*A5.*BANDUNG", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_paket))
         
     elif "DAMA.ID STORE" in toko:
         # DAMA.ID STORE Logic
@@ -273,6 +271,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
 
         biaya_gold = get_biaya_regex(r"Al.*Quran.*Gold.*Silver.*Aqeel", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
+
+        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Al.*Quran.*Mushaf.*Al-Aqeel.*A5.*BANDUNG", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket A5 Kertas Koran', biaya_paket))
         
     else:
         # HUMAN STORE (Default/Original Logic)
