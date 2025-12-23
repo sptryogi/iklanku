@@ -272,7 +272,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Al.*Quran.*Gold.*Silver.*Aqeel", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Alquran.*Al-Aqeel.*Tanpa.*Terjemahan", case_sensitive=False)
+        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Alquran.*Al-Aqeel.*Tanpa.*Terjemahan.*BANDUNG.*Wakaf", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Paket Al Aqeel Tanpa Terjemahan', biaya_paket))
         
     else:
