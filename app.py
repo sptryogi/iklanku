@@ -282,7 +282,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         # rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
         
         # 2. A6 Pastel
-        biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel", case_sensitive=False)
+        biaya_a6_pastel = get_biaya_regex(r"AL QUR'AN A6 NON TERJEMAH HVS WARNA PASTEL", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
         
         # 3. A5 Koran Paket 7 (Sisa dari general A5 Koran dikurangi Kapital)
@@ -301,7 +301,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Al Aqeel Gold", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        b_a6_tahlil = get_biaya_regex(r"EDISI.*TAHLILAN.*30.*Juz", case_sensitive=False)
+        b_a6_tahlil = get_biaya_regex(r"EDISI.*TAHLILAN.*30.*Juz.*+.*Doa.*Tahlil", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
     # Hitung Total Biaya Rinci
