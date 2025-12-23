@@ -257,13 +257,13 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         
     elif "DAMA.ID STORE" in toko:
         # DAMA.ID STORE Logic
-        # 1. A5 Kertas Koran
-        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
+        # # 1. A5 Kertas Koran
+        # b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
+        # rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
         
-        # 2. A6 HVS (Sesuai request: "A6 HVS")
-        b_a6_hvs = get_biaya_regex(r"A6.*HVS", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan A6 HVS', b_a6_hvs))
+        # # 2. A6 HVS (Sesuai request: "A6 HVS")
+        # b_a6_hvs = get_biaya_regex(r"A6.*HVS", case_sensitive=False)
+        # rincian_biaya_khusus.append(('Biaya Iklan A6 HVS', b_a6_hvs))
         
         # 3. A6 Edisi Tahlil
         b_a6_tahlil = get_biaya_regex(r"A6.*EDISI.*TAHLIL", case_sensitive=False)
@@ -272,8 +272,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Al.*Quran.*Gold.*Silver.*Aqeel", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Al.*Quran.*Mushaf.*Al-Aqeel.*A5.*BANDUNG", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Paket A5 Kertas Koran', biaya_paket))
+        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Alquran.*Al-Aqeel.*Tanpa.*Terjemahan", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Al Aqeel Tanpa Terjemahan', biaya_paket))
         
     else:
         # HUMAN STORE (Default/Original Logic)
