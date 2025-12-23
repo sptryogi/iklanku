@@ -301,7 +301,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Al Aqeel Gold", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        b_a6_tahlil = get_biaya_regex(r"AL.*QUR'AN.*EDISI.*TAHLILAN.*30.*Juz", case_sensitive=False)
+        b_a6_tahlil = get_biaya_regex(r"EDISI.*TAHLILAN.*30.*Juz", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
     # Hitung Total Biaya Rinci
