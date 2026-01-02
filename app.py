@@ -254,7 +254,10 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Alquran.*GOLD.*Hard.*Cover", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
+        b_pkt_wakaf = get_biaya_regex(r"PAKET MURAH ALQURAN AL AQEEL MUSHAF NON TERJEMAHAN | SURABAYA | al quran Wakaf/Shodaqoh hadiah hampers islami", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Wakaf', b_a5_koran))
         
+
     elif "DAMA.ID STORE" in toko:
         # DAMA.ID STORE Logic
         # # 1. A5 Kertas Koran
