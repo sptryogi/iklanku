@@ -238,7 +238,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     if "Pacific Bookstore" in toko:
         # Pacific Logic
         # 1. A5 Kertas Koran
-        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
+        b_a5_koran = get_biaya_regex(r"Al Quran Untuk Wakaf Al Aqeel A5 Kertas Koran 18 Baris | SURABAYA | Alquran Hadiah Islami Hampers", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
 
         # PAKET MURAH Al Quran Mushaf Al-Aqeel A5 Kertas Koran Tanpa Terjemahan | BANDUNG
