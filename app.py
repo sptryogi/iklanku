@@ -238,10 +238,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     if "Pacific Bookstore" in toko:
         # Pacific Logic
         # 1. A5 Kertas Koran
-        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
+        b_a5_koran = get_biaya_regex(r"Al Quran Untuk Wakaf Al Aqeel A5 Kertas Koran 18 Baris | SURABAYA | Alquran Hadiah Islami Hampers", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
-
-        # PAKET MURAH Al Quran Mushaf Al-Aqeel A5 Kertas Koran Tanpa Terjemahan | BANDUNG
         
         # 2. A6 Kertas HVS
         b_a6_hvs = get_biaya_regex(r"Saku.*Pastel.*A6.*Kertas.*HVS", case_sensitive=False)
@@ -254,8 +252,8 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Alquran.*GOLD.*Hard.*Cover", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        b_pkt_wakaf = get_biaya_regex(r"PAKET.*MURAH.*ALQURAN.*Wakaf/Shodaqoh", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Paket Murah', b_a5_koran))
+        b_pkt_wakaf = get_biaya_regex(r"PAKET MURAH ALQURAN AL AQEEL MUSHAF NON TERJEMAHAN | SURABAYA | al quran Wakaf/Shodaqoh hadiah hampers islami", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Murah', b_pkt_wakaf))
         
 
     elif "DAMA.ID STORE" in toko:
