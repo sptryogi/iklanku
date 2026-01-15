@@ -305,6 +305,9 @@ def process_data(store_name, file_order, file_iklan, file_seller):
         b_a6_tahlil = get_biaya_regex(r"AL QUR'AN EDISI TAHLILAN 30 Juz + Doa Tahlil | Pengganti Buku Yasin | Al Aqeel A6 Pastel HVS Edisi Tahlilan", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
+        biaya_pkt_wakaf = get_biaya_regex(r"Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket 50 pcs', biaya_pkt_wakaf))
+
     # Hitung Total Biaya Rinci
     total_biaya_iklan_rinci = sum([val for label, val in rincian_biaya_khusus])
     
