@@ -51,9 +51,125 @@ def clean_variasi(text):
 def clean_variasi_tiktok(text):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
-    # Ambil bagian depan sebelum koma (A5, Biru -> A5)
+    # Ambil bagian depan sebelum koma (misal: 'A5, Biru' -> 'A5')
     return text.split(',')[0].strip().upper()
 
+def load_tiktok_file(uploaded_file, drop_second=False):
+    # Baca excel
+    df = pd.read_excel(uploaded_file)
+    if drop_second and len(df) > 0:
+        # Hapus baris kedua (index 0 di data setelah header)
+        df = df.drop(df.index[0]).reset_index(drop=True)
+    # Jadikan header KAPITAL semua
+    df.columns = [str(c).upper().strip() for c in df.columns]
+    return df
+
+def process_tiktok_data(toko, f_orders, f_product, f_creator):
+    output = io.BytesIO()
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    ws = workbook.add_worksheet("Laporan TikTok")
+    
+    # Format
+    fmt_header_main = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D9D9D9'})
+    fmt_head_orange = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FCE4D6'})
+    fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#E2EFDA'})
+    fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
+    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
+
+    # 1. LOAD DATA
+    df_orders = load_tiktok_file(f_orders, drop_second=True)
+    df_prod = load_tiktok_file(f_product)
+    df_aff = load_tiktok_file(f_creator)
+
+    # 2. FILTER & CLEANING ORDERS
+    df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
+    df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
+    
+    # Rumus Omzet: (Original Price - (Discount / Qty)) * Qty
+    df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'])) * df_orders['QUANTITY']
+
+    # 3. JOIN COMMISSION (Matching by Order ID / ID Pesanan)
+    # Catatan: User minta cocokan Product Name tapi menyebutkan ID, 
+    # join ID jauh lebih akurat. Kita ambil kolom komisi.
+    df_aff_sub = df_aff[['ID PESANAN', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR']].copy()
+    df_orders = df_orders.merge(df_aff_sub, left_on='ORDER ID', right_on='ID PESANAN', how='left')
+    df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'] = df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].fillna(0)
+
+    # 4. AGGREGATE TABEL 5
+    t5_grouped = df_orders.groupby('PRODUCT NAME').agg({
+        'VARIASI_CLEAN': 'first',
+        'QUANTITY': 'sum',
+        'OMZET_PENJUALAN': 'sum',
+        'PERKIRAAN PEMBAYARAN KOMISI STANDAR': 'sum'
+    }).reset_index()
+
+    # --- WRITING EXCEL ---
+    ws.write(0, 0, "LAPORAN IKLAN", fmt_header_main)
+    curr_row = 2
+
+    # TABEL 2: RINCIAN BIAYA IKLAN
+    ws.write(curr_row, 0, "RINCIAN BIAYA IKLAN", fmt_head_orange)
+    curr_row += 1
+    t2_headers = ['Nama produk yang diiklankan', 'Biaya iklan', 'ROI']
+    for i, h in enumerate(t2_headers): ws.write(curr_row, i, h, fmt_head_orange)
+    
+    curr_row += 1
+    t2_start_row = curr_row
+    for _, row in df_prod.iterrows():
+        ws.write(curr_row, 0, row.get('NAMA PRODUK', ''), fmt_num)
+        ws.write(curr_row, 1, row.get('BIAYA', 0), fmt_curr)
+        ws.write(curr_row, 2, row.get('ROI', 0), fmt_num)
+        curr_row += 1
+    
+    total_biaya_iklan = df_prod['BIAYA'].sum() if 'BIAYA' in df_prod.columns else 0
+    ws.write(curr_row, 0, "TOTAL", fmt_head_orange)
+    ws.write(curr_row, 1, total_biaya_iklan, fmt_curr)
+    ws.write(curr_row, 2, "", fmt_head_orange)
+    
+    curr_row += 2
+
+    # TABEL 5: RINCIAN SELURUH PESANAN
+    total_qty = t5_grouped['QUANTITY'].sum()
+    ws.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
+    ws.write(curr_row, 1, total_qty, fmt_head_green)
+    curr_row += 1
+    t5_headers = ['Nama Produk', 'Variasi', 'Jumlah Eksemplar', 'Omzet Penjualan', 'Total Komisi Affiliate']
+    for i, h in enumerate(t5_headers): ws.write(curr_row, i, h, fmt_head_green)
+    
+    curr_row += 1
+    for _, row in t5_grouped.iterrows():
+        ws.write(curr_row, 0, row['PRODUCT NAME'], fmt_num)
+        ws.write(curr_row, 1, row['VARIASI_CLEAN'], fmt_num)
+        ws.write(curr_row, 2, row['QUANTITY'], fmt_num)
+        ws.write(curr_row, 3, row['OMZET_PENJUALAN'], fmt_curr)
+        ws.write(curr_row, 4, row['PERKIRAAN PEMBAYARAN KOMISI STANDAR'], fmt_curr)
+        curr_row += 1
+    
+    total_omzet = t5_grouped['OMZET_PENJUALAN'].sum()
+    total_komisi = t5_grouped['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum()
+    ws.write(curr_row, 0, "TOTAL", fmt_head_green)
+    ws.write(curr_row, 1, "", fmt_head_green)
+    ws.write(curr_row, 2, total_qty, fmt_num)
+    ws.write(curr_row, 3, total_omzet, fmt_curr)
+    ws.write(curr_row, 4, total_komisi, fmt_curr)
+
+    curr_row += 2
+
+    # TABEL 6: TOTAL PENJUALAN
+    ws.write(curr_row, 0, "Total Penjualan", fmt_head_orange); ws.write(curr_row, 1, total_omzet, fmt_curr); curr_row += 1
+    ws.write(curr_row, 0, "Total Biaya Iklan", fmt_head_orange); ws.write(curr_row, 1, total_biaya_iklan, fmt_curr); curr_row += 1
+    ws.write(curr_row, 0, "Total Komisi Affiliate", fmt_head_orange); ws.write(curr_row, 1, total_komisi, fmt_curr); curr_row += 1
+    
+    denom = (total_biaya_iklan + total_komisi)
+    roi_final = total_omzet / denom if denom > 0 else 0
+    ws.write(curr_row, 0, "ROI", fmt_head_orange); ws.write(curr_row, 1, roi_final, fmt_num)
+
+    ws.set_column(0, 0, 40)
+    ws.set_column(1, 4, 15)
+    workbook.close()
+    output.seek(0)
+    return output
+    
 # --- LOGIKA PROSES DATA ---
 
 def process_data(store_name, file_order, file_iklan, file_seller):
@@ -735,139 +851,19 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     output.seek(0)
     return output
 
-def process_tiktok_data(store_name, file_semua_pesanan, file_product_data, file_creator):
-    # 1. LOAD DATA (Menggunakan header baris pertama)
-    df_pesanan = pd.read_excel(file_semua_pesanan, header=0)
-    df_product = pd.read_excel(file_product_data, header=0)
-    df_creator = pd.read_excel(file_creator, header=0)
-
-    # 2. CLEANING SEMUA PESANAN
-    # Hapus status 'Dibatalkan'
-    if 'Order Status' in df_pesanan.columns:
-        df_pesanan = df_pesanan[df_pesanan['Order Status'] != 'Dibatalkan'].copy()
-    
-    # Bersihkan Variasi (Hanya ambil depan koma)
-    df_pesanan['Variasi_Clean'] = df_pesanan['VARIATION'].apply(clean_variasi_tiktok)
-    
-    # Hitung Omzet Penjualan: ([SKU UNIT ORIGINAL PRICE] - (SKU SELLER DISCOUNT / QUANTITY)) * QUANTITY
-    # Rumus disederhanakan: (Original Price * Qty) - Discount
-    df_pesanan['Omzet_Calc'] = (df_pesanan['SKU UNIT ORIGINAL PRICE'] - (df_pesanan['SKU SELLER DISCOUNT'] / df_pesanan['QUANTITY'])) * df_pesanan['QUANTITY']
-
-    # 3. MERGE DENGAN CREATOR ORDER-ALL (Affiliate)
-    # Kita butuh Total Komisi per Produk
-    # Match ID Pesanan (Creator) dengan ORDER ID (Semua Pesanan)
-    df_creator_clean = df_creator.groupby('ID Pesanan')['Perkiraan pembayaran komisi standar'].sum().reset_index()
-    df_pesanan = df_pesanan.merge(df_creator_clean, left_on='ORDER ID', right_on='ID Pesanan', how='left').fillna(0)
-
-    # 4. AGGREGATION UNTUK TABEL 5 (RINCIAN SELURUH PESANAN)
-    grp_tabel5 = df_pesanan.groupby(['PRODUCT NAME', 'Variasi_Clean']).agg({
-        'QUANTITY': 'sum',
-        'Omzet_Calc': 'sum',
-        'Perkiraan pembayaran komisi standar': 'sum'
-    }).reset_index()
-    grp_tabel5.columns = ['NAMA PRODUK', 'VARIASI', 'JUMLAH EKSEMPLAR', 'OMZET PENJUALAN', 'TOTAL KOMISI AFFILIATE']
-
-    # 5. DATA UNTUK TABEL 2 (IKLAN)
-    # Ambil dari Product Data
-    df_tabel2 = df_product[['Nama produk yang diiklankan', 'Biaya', 'ROI']].copy()
-    df_tabel2.columns = ['NAMA PRODUK YANG DIIKLANKAN', 'BIAYA IKLAN', 'ROI']
-    total_biaya_iklan = df_tabel2['BIAYA IKLAN'].sum()
-
-    # 6. SUMMARY (TABEL 6)
-    total_penjualan = grp_tabel5['OMZET PENJUALAN'].sum()
-    total_komisi = grp_tabel5['TOTAL KOMISI AFFILIATE'].sum()
-    roi_final = total_penjualan / (total_biaya_iklan + total_komisi) if (total_biaya_iklan + total_komisi) > 0 else 0
-
-    # --- GENERATE EXCEL ---
-    output = io.BytesIO()
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    workbook = writer.book
-    
-    # Formats (Gunakan format yang sudah ada di script Shopee kamu atau buat baru)
-    fmt_header_main = workbook.add_format({'bold': True, 'font_size': 14, 'bg_color': '#ADD8E6'})
-    fmt_head_brown = workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#D2691E', 'font_color': 'white', 'align': 'center'})
-    fmt_head_green = workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#90EE90', 'align': 'center'})
-    fmt_col = workbook.add_format({'bold': True, 'border': 1, 'bg_color': '#f0f0f0', 'align': 'center'})
-    fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
-    fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
-    fmt_text = workbook.add_format({'border': 1})
-
-    ws = workbook.add_worksheet('LAPORAN IKLAN')
-    ws.merge_range('A1:E2', f'LAPORAN IKLAN {store_name} (TIKTOK)', fmt_header_main)
-
-    # TABEL 2: RINCIAN BIAYA IKLAN
-    row = 3
-    ws.merge_range(row, 0, row, 2, 'RINCIAN BIAYA IKLAN', fmt_head_brown)
-    cols_t2 = ['NAMA PRODUK YANG DIIKLANKAN', 'BIAYA IKLAN', 'ROI']
-    for i, c in enumerate(cols_t2):
-        ws.write(row+1, i, c, fmt_col)
-    
-    curr_row = row + 2
-    for _, r in df_tabel2.iterrows():
-        ws.write(curr_row, 0, r['NAMA PRODUK YANG DIIKLANKAN'], fmt_text)
-        ws.write(curr_row, 1, r['BIAYA IKLAN'], fmt_curr)
-        ws.write(curr_row, 2, r['ROI'], fmt_num)
-        curr_row += 1
-    
-    ws.write(curr_row, 0, 'TOTAL', fmt_col)
-    ws.write(curr_row, 1, total_biaya_iklan, fmt_col)
-    ws.write(curr_row, 2, '', fmt_col)
-
-    # TABEL 5: RINCIAN SELURUH PESANAN
-    row = curr_row + 2
-    ws.write(row, 0, 'RINCIAN SELURUH PESANAN', fmt_head_green)
-    ws.write(row, 1, len(df_pesanan['ORDER ID'].unique()), fmt_num) # Total order unik
-    
-    cols_t5 = ['NAMA PRODUK', 'VARIASI', 'JUMLAH EKSEMPLAR', 'OMZET PENJUALAN', 'TOTAL KOMISI AFFILIATE']
-    for i, c in enumerate(cols_t5):
-        ws.write(row+1, i, c, fmt_col)
-    
-    curr_row = row + 2
-    for _, r in grp_tabel5.iterrows():
-        ws.write(curr_row, 0, r['NAMA PRODUK'], fmt_text)
-        ws.write(curr_row, 1, r['VARIASI'], fmt_text)
-        ws.write(curr_row, 2, r['JUMLAH EKSEMPLAR'], fmt_num)
-        ws.write(curr_row, 3, r['OMZET PENJUALAN'], fmt_curr)
-        ws.write(curr_row, 4, r['TOTAL KOMISI AFFILIATE'], fmt_curr)
-        curr_row += 1
-    
-    ws.write(curr_row, 0, 'TOTAL', fmt_col)
-    ws.write(curr_row, 1, '', fmt_col)
-    ws.write(curr_row, 2, grp_tabel5['JUMLAH EKSEMPLAR'].sum(), fmt_col)
-    ws.write(curr_row, 3, grp_tabel5['OMZET PENJUALAN'].sum(), fmt_col)
-    ws.write(curr_row, 4, grp_tabel5['TOTAL KOMISI AFFILIATE'].sum(), fmt_col)
-
-    # TABEL 6: SUMMARY
-    row = curr_row + 2
-    summary_data = [
-        ('TOTAL PENJUALAN', total_penjualan),
-        ('TOTAL BIAYA IKLAN', total_biaya_iklan),
-        ('TOTAL KOMISI AFFILIATE', total_komisi),
-        ('ROI', roi_final)
-    ]
-    for i, (label, val) in enumerate(summary_data):
-        ws.write(row + i, 0, label, fmt_text)
-        ws.write(row + i, 1, val, fmt_curr if label != 'ROI' else fmt_num)
-
-    ws.set_column('A:A', 40)
-    ws.set_column('B:E', 20)
-    
-    writer.close()
-    output.seek(0)
-    return output
 
 # --- INTERFACE STREAMLIT ---
-
 st.title("🛒 IklanKu - Generator Laporan Otomatis")
 st.markdown("---")
 
-# 1. Pilih Marketplace
-marketplace = st.radio("Pilih Marketplace / E-Commerce:", ["Shopee", "TikTok"], horizontal=True)
+# Pilihan Platform
+platform = st.radio("Pilih Marketplace:", ["Shopee", "TikTok"], horizontal=True)
 
-# 2. Input Toko
+# Input Toko
 toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE"])
 
-if marketplace == "Shopee":
+# Input File Berdasarkan Platform
+if platform == "Shopee":
     col1, col2, col3 = st.columns(3)
     with col1:
         f_order = st.file_uploader("Upload 'Order-all' (xlsx)", type=['xlsx'])
@@ -879,30 +875,28 @@ if marketplace == "Shopee":
     if st.button("Mulai Proses Shopee", type="primary"):
         if f_order and f_iklan:
             with st.spinner('Memproses data Shopee...'):
-                excel_file = process_data(toko, f_order, f_iklan, f_seller)
-                if excel_file:
+                try:
+                    excel_file = process_data(toko, f_order, f_iklan, f_seller)
                     st.success("Selesai!")
                     st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}.xlsx")
-        else:
-            st.warning("Upload file Order-all dan Iklan terlebih dahulu.")
+                except Exception as e:
+                    st.error(f"Error: {e}")
 
-else: # JIKA TIKTOK
+else: # TikTok
     col1, col2, col3 = st.columns(3)
     with col1:
-        f_semua_pesanan = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
+        t_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
     with col2:
-        f_product_data = st.file_uploader("Upload 'Product Data' (xlsx)", type=['xlsx'])
+        t_prod = st.file_uploader("Upload 'Product Data' (xlsx)", type=['xlsx'])
     with col3:
-        f_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
+        t_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
 
     if st.button("Mulai Proses TikTok", type="primary"):
-        if f_semua_pesanan and f_product_data and f_creator:
+        if t_order and t_prod and t_creator:
             with st.spinner('Memproses data TikTok...'):
                 try:
-                    excel_file = process_tiktok_data(toko, f_semua_pesanan, f_product_data, f_creator)
+                    excel_file = process_tiktok_data(toko, t_order, t_prod, t_creator)
                     st.success("Selesai!")
                     st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}.xlsx")
                 except Exception as e:
-                    st.error(f"Error TikTok: {e}")
-        else:
-            st.warning("Mohon upload ketiga file TikTok (.xlsx) terlebih dahulu.")
+                    st.error(f"Error: {e}")
