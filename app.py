@@ -64,7 +64,7 @@ def load_tiktok_file(uploaded_file, drop_second=False):
     df.columns = [str(c).upper().strip() for c in df.columns]
     return df
 
-def process_tiktok_data(toko, f_orders, f_product, f_creator):
+def process_tiktok_data(toko, file_order, file_product, file_creator):
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     ws = workbook.add_worksheet("Laporan TikTok")
@@ -77,9 +77,9 @@ def process_tiktok_data(toko, f_orders, f_product, f_creator):
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
 
     # 1. LOAD DATA
-    df_orders = load_tiktok_file(f_orders, drop_second=True)
-    df_prod = load_tiktok_file(f_product)
-    df_aff = load_tiktok_file(f_creator)
+    df_orders = load_tiktok_file(file_order, drop_second=True)
+    df_prod = load_tiktok_file(file_product)
+    df_aff = load_tiktok_file(file_creator)
 
     # 2. FILTER & CLEANING ORDERS
     df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
@@ -172,7 +172,7 @@ def process_tiktok_data(toko, f_orders, f_product, f_creator):
     
 # --- LOGIKA PROSES DATA ---
 
-def process_data(store_name, file_order, file_iklan, file_seller):
+def process_data(toko, file_order, file_iklan, file_seller):
 
     # Dictionary untuk menyimpan panjang maksimum setiap kolom
     col_widths = {}
@@ -579,7 +579,7 @@ def process_data(store_name, file_order, file_iklan, file_seller):
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
     
     # Judul Utama
-    ws_lap.merge_range('A1:S2', f'LAPORAN IKLAN {store_name}', fmt_header_main)
+    ws_lap.merge_range('A1:S2', f'LAPORAN IKLAN SHOPEE {toko}', fmt_header_main)
     
     # --- TABEL 1: PESANAN IKLAN (A-F) ---
     start_row = 3 # Row 4
@@ -866,17 +866,17 @@ toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID
 if platform == "Shopee":
     col1, col2, col3 = st.columns(3)
     with col1:
-        f_order = st.file_uploader("Upload 'Order-all' (xlsx)", type=['xlsx'])
+        file_order = st.file_uploader("Upload 'Order-all' (xlsx)", type=['xlsx'])
     with col2:
-        f_iklan = st.file_uploader("Upload 'Iklan Keseluruhan' (csv)", type=['csv'])
+        file_iklan = st.file_uploader("Upload 'Iklan Keseluruhan' (csv)", type=['csv'])
     with col3:
-        f_seller = st.file_uploader("Upload 'Seller conversion' (csv) - Opsional", type=['csv'])
+        file_seller = st.file_uploader("Upload 'Seller conversion' (csv) - Opsional", type=['csv'])
 
     if st.button("Mulai Proses Shopee", type="primary"):
         if f_order and f_iklan:
             with st.spinner('Memproses data Shopee...'):
                 try:
-                    excel_file = process_data(toko, f_order, f_iklan, f_seller)
+                    excel_file = process_data(toko, file_order, file_iklan, file_seller)
                     st.success("Selesai!")
                     st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}.xlsx")
                 except Exception as e:
@@ -885,17 +885,17 @@ if platform == "Shopee":
 else: # TikTok
     col1, col2, col3 = st.columns(3)
     with col1:
-        t_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
+        file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
     with col2:
-        t_prod = st.file_uploader("Upload 'Product Data' (xlsx)", type=['xlsx'])
+        file_product = st.file_uploader("Upload 'Product Data' (xlsx)", type=['xlsx'])
     with col3:
-        t_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
+        file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
 
     if st.button("Mulai Proses TikTok", type="primary"):
         if t_order and t_prod and t_creator:
             with st.spinner('Memproses data TikTok...'):
                 try:
-                    excel_file = process_tiktok_data(toko, t_order, t_prod, t_creator)
+                    excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
                     st.success("Selesai!")
                     st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}.xlsx")
                 except Exception as e:
