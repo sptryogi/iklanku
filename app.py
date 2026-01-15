@@ -873,7 +873,7 @@ if platform == "Shopee":
         file_seller = st.file_uploader("Upload 'Seller conversion' (csv) - Opsional", type=['csv'])
 
     if st.button("Mulai Proses Shopee", type="primary"):
-        if f_order and f_iklan:
+        if file_order and file_iklan:
             with st.spinner('Memproses data Shopee...'):
                 try:
                     excel_file = process_data(toko, file_order, file_iklan, file_seller)
@@ -892,7 +892,7 @@ else: # TikTok
         file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
 
     if st.button("Mulai Proses TikTok", type="primary"):
-        if t_order and t_prod and t_creator:
+        if file_order and file_product and file_creator:
             with st.spinner('Memproses data TikTok...'):
                 try:
                     excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
