@@ -58,15 +58,12 @@ def clean_variasi_tiktok(text):
         return parts[0].strip().upper()
     return text.strip().upper()
 
-def load_tiktok_file(uploaded_file):
-    # Baca Excel, Header di baris 1 (Index 0).
-    # Hapus baris 2 (Index 1) karena user bilang baris ke 2 dihapus.
+def load_tiktok_file(uploaded_file, drop_second_row=False):
     df = pd.read_excel(uploaded_file, header=0)
-    # Hapus baris pertama dari data (yang merupakan baris ke-2 di Excel)
-    if not df.empty:
+    if drop_second_row and not df.empty:
+        # Hanya hapus jika diminta (khusus file Semua Pesanan)
         df = df.iloc[1:].reset_index(drop=True)
     
-    # Ubah semua nama kolom jadi uppercase agar aman
     df.columns = [str(c).strip().upper() for c in df.columns]
     return df
     
@@ -92,9 +89,9 @@ def process_data(platform, toko, inputs):
         ws = workbook.add_worksheet("Laporan TikTok")
         
         # 1. LOAD DATA
-        df_orders = load_tiktok_file(inputs['all_orders'])
-        df_product = load_tiktok_file(inputs['product_data'])
-        df_creator = load_tiktok_file(inputs['creator_order'])
+        df_orders = load_tiktok_file(inputs['all_orders'], drop_second_row=True) # Pakai True di sini
+        df_product = load_tiktok_file(inputs['product_data']) # Default False
+        df_creator = load_tiktok_file(inputs['creator_order']) # Default False
         
         # 2. PRE-PROCESSING ORDERS
         # Hapus yang Dibatalkan
