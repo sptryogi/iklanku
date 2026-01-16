@@ -83,6 +83,9 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
 
 
     # --- LOAD FILE ORDER MENGGUNAKAN LOAD_WORKBOOK ---
+    if isinstance(file_order, (bytes, bytearray)):
+        file_order = io.BytesIO(file_order)
+        
     temp_wb = load_workbook(file_order, data_only=True)
     temp_ws = temp_wb.active
     data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
@@ -215,11 +218,21 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     ws_excel.set_column(0, 0, 50)
     ws_excel.set_column(1, 4, 20)
 
-    df_orders.to_excel(workbook.add_worksheet("Semua Pesanan"), index=False)
-    df_prod.to_excel(workbook.add_worksheet("Product Data"), index=False)
-    df_aff.to_excel(workbook.add_worksheet("Creator Order"), index=False)
+    # df_orders.to_excel(workbook.add_worksheet("Semua Pesanan"), index=False)
+    # df_prod.to_excel(workbook.add_worksheet("Product Data"), index=False)
+    # df_aff.to_excel(workbook.add_worksheet("Creator Order"), index=False)
 
-    workbook.close()
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    writer.book = workbook
+    writer.sheets = {ws_excel.name: ws_excel}
+    
+    df_orders.to_excel(writer, sheet_name="Semua Pesanan", index=False)
+    df_prod.to_excel(writer, sheet_name="Product Data", index=False)
+    df_aff.to_excel(writer, sheet_name="Creator Order", index=False)
+
+    writer.close()
+
+    # workbook.close()
     output.seek(0)
     return output
     
