@@ -182,7 +182,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     total_eks = t5_grouped['QUANTITY'].sum()
     total_qty = df_orders['ORDER ID'].nunique()
     ws_excel.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
-    ws_excel.write(curr_row, 1, total_eks, fmt_head_green)
+    ws_excel.write(curr_row, 1, total_qty, fmt_head_green)
     curr_row += 1
     t5_headers = ['NAMA PRODUK', 'VARIASI', 'JUMLAH EKSEMPLAR', 'OMZET PENJUALAN', 'TOTAL KOMISI AFFILIATE']
     for i, h in enumerate(t5_headers): ws_excel.write(curr_row, i, h, fmt_head_green)
