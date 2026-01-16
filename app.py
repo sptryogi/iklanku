@@ -4,6 +4,7 @@ import io
 import re
 from datetime import datetime
 import xlsxwriter
+from openpyxl import load_workbook
 
 # --- KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="IklanKu (Laporan Harian)", layout="wide")
@@ -76,8 +77,27 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
 
+    wb = load_workbook(file_order, data_only=True)
+    ws = wb.active
+    
+    data = [list(row) for row in ws.iter_rows(values_only=True)]
+    data = [r for r in data if any(r)]  # hapus baris kosong
+    
+    final_header = [str(x).strip() if x else "" for x in data[0]]
+    
+    if len(data) > 1 and any("Platform unique order ID" in str(x) for x in data[1]):
+        data_rows = data[2:]
+    else:
+        data_rows = data[1:]
+    
+    df_orders = pd.DataFrame(data_rows, columns=final_header)
+    
+    df_orders.columns = df_orders.columns.str.strip()
+    df_orders = clean_columns(df_orders)
+    df_orders.columns = [col.upper() for col in df_orders.columns]
+
+
     # 1. LOAD DATA
-    df_orders = load_tiktok_file(file_order, drop_second=True)
     df_prod = load_tiktok_file(file_product)
     df_aff = load_tiktok_file(file_creator)
 
