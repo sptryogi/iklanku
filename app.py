@@ -40,12 +40,12 @@ def extract_eksemplar(variasi_text):
     # Jika tidak ada kata kunci (Satuan, A5, Random, dll), hitung 1
     return 1
 
-def clean_variasi(text):
+def clean_variasi(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
 
     # LOGIKA KHUSUS: Paket Wakaf Murah 50 pcs
-    if "Paket Wakaf Murah 50 pcs" in str(product_name):
+    if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(product_name):
         # Ambil bagian depan koma
         part = text.split(',')[0].strip().upper()
         # Hapus kata 'AL AQEEL'
@@ -57,7 +57,7 @@ def clean_variasi(text):
         return parts[-1].strip().upper()
     return text.strip().upper()
 
-def clean_variasi_tiktok(text):
+def clean_variasi_tiktok(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
 
@@ -343,14 +343,14 @@ def process_data(toko, file_order, file_iklan, file_seller):
 
     # 1. Bersihkan Variasi (Sekarang kirim Nama Produk ke fungsi)
     df_order['Variasi_Clean'] = df_order.apply(
-        lambda x: clean_variasi(x['Nama Produk'], x['Nama Produk']), axis=1
+        lambda x: clean_variasi(x['Nama Variasi'], x['Nama Produk']), axis=1
     )
     
     # 2. Hitung Total Eksemplar
     def get_total_eksemplar_shopee(row):
         eksemplar_per_unit = extract_eksemplar(row['Variasi_Clean'])
         # Jika produk Paket Wakaf 50pcs, paksa kali 50
-        if "Paket Wakaf Murah 50 pcs" in str(row['Nama Produk']):
+        if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(row['Nama Produk']):
             return (eksemplar_per_unit * 50) * row['Jumlah']
         return eksemplar_per_unit * row['Jumlah']
     
