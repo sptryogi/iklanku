@@ -50,9 +50,14 @@ def clean_variasi(text):
         return parts[-1].strip().upper()
     return text.strip().upper()
 
-def clean_variasi_tiktok(text):
+def clean_variasi_tiktok(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
+    # Logika khusus untuk produk paket wakaf
+    # Pastikan nama produk di bawah ini sama persis dengan yang ada di file excel
+    if "Paket Wakaf Murah 50 pcs" in str(product_name):
+        part = text.split(',')[0].strip().upper()
+        return part.replace('AL AQEEL', '').strip()
    
     # Ambil bagian depan sebelum koma (misal: 'A5, Biru' -> 'A5')
     return text.split(',')[0].strip().upper()
@@ -132,10 +137,22 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
     
     # Fungsi pembersihan variasi (A5, Biru -> A5)
-    def clean_variasi_tiktok(x):
-        return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
+    # def clean_variasi_tiktok(x):
+    #     return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
     
-    df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
+    # df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
+    df_orders['VARIASI_CLEAN'] = df_orders.apply(
+        lambda x: clean_variasi_tiktok(x['VARIATION'], x['PRODUCT NAME']), axis=1
+    )
+
+    # Tambahkan kolom JUMLAH_EKSEMPLAR sebelum di-grouping
+    def get_eksemplar_tiktok(row):
+        base = extract_eksemplar(row['VARIASI_CLEAN'])
+        if "Paket Wakaf Murah 50 pcs" in str(row['PRODUCT NAME']):
+            return (base * 50) * row['QUANTITY']
+        return base * row['QUANTITY']
+    
+    df_orders['JUMLAH_EKSEMPLAR'] = df_orders.apply(get_eksemplar_tiktok, axis=1)
     
     # Rumus Omzet Penjualan
     df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
@@ -153,7 +170,8 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     # --- 4. AGGREGATE TABEL 5 (By Product Name) ---
     t5_grouped = df_orders.groupby('PRODUCT NAME').agg({
         'VARIASI_CLEAN': 'first',
-        'QUANTITY': 'sum',
+        # 'QUANTITY': 'sum',
+        'JUMLAH_EKSEMPLAR': 'sum',
         'OMZET_PENJUALAN': 'sum',
         'PERKIRAAN PEMBAYARAN KOMISI STANDAR': 'sum'
     }).reset_index()
@@ -181,7 +199,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     curr_row += 2
 
     # TABEL 5: RINCIAN SELURUH PESANAN
-    total_eks = t5_grouped['QUANTITY'].sum()
+    total_eks = t5_grouped['JUMLAH_EKSEMPLAR'].sum()
     total_qty = df_orders['ORDER ID'].nunique()
     ws_excel.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
     ws_excel.write(curr_row, 1, total_qty, fmt_head_green)
@@ -193,7 +211,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     for _, row in t5_grouped.iterrows():
         ws_excel.write(curr_row, 0, str(row['PRODUCT NAME']).upper(), fmt_text_left)
         ws_excel.write(curr_row, 1, str(row['VARIASI_CLEAN']).upper(), fmt_num)
-        ws_excel.write(curr_row, 2, row['QUANTITY'], fmt_num)
+        ws_excel.write(curr_row, 2, row['JUMLAH_EKSEMPLAR'], fmt_num)
         ws_excel.write(curr_row, 3, row['OMZET_PENJUALAN'], fmt_curr)
         ws_excel.write(curr_row, 4, row['PERKIRAAN PEMBAYARAN KOMISI STANDAR'], fmt_curr)
         curr_row += 1
