@@ -73,10 +73,10 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
 
-    wb = load_workbook(file_order, data_only=True)
-    ws = wb.active
+    temp_wb = load_workbook(file_order, data_only=True)
+    temp_ws = temp_wb.active
     
-    data = [list(row) for row in ws.iter_rows(values_only=True)]
+    data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
     data = [r for r in data if any(r)]  # hapus baris kosong
     
     final_header = [str(x).strip() if x else "" for x in data[0]]
@@ -91,17 +91,32 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     df_orders.columns = df_orders.columns.str.strip()
     df_orders.columns = [col.upper() for col in df_orders.columns]
 
-
     # 1. LOAD DATA
     df_prod = load_tiktok_file(file_product)
     df_aff = load_tiktok_file(file_creator)
+
+    # --- TAMBAHKAN INI AGAR TIDAK ERROR STR / STR ---
+    numeric_cols = [
+        'SKU UNIT ORIGINAL PRICE', 'SKU SELLER DISCOUNT', 
+        'QUANTITY', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR'
+    ]
+    for col in numeric_cols:
+        if col in df_orders.columns:
+            df_orders[col] = pd.to_numeric(df_orders[col], errors='coerce').fillna(0)
+    
+    # Lakukan hal yang sama untuk df_prod agar biaya bisa dijumlahkan
+    if 'BIAYA' in df_prod.columns:
+        df_prod['BIAYA'] = pd.to_numeric(df_prod['BIAYA'], errors='coerce').fillna(0)
 
     # 2. FILTER & CLEANING ORDERS
     df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
     df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
     
     # Rumus Omzet: (Original Price - (Discount / Qty)) * Qty
-    df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'])) * df_orders['QUANTITY']
+    # df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'])) * df_orders['QUANTITY']
+    df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
+                                (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'].replace(0, 1))
+                               ) * df_orders['QUANTITY']
 
     # 3. JOIN COMMISSION (Matching by Order ID / ID Pesanan)
     # Catatan: User minta cocokan Product Name tapi menyebutkan ID, 
