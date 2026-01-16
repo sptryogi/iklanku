@@ -71,7 +71,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     ws_excel = workbook.add_worksheet("Laporan TikTok")
     
     # Format-format
-    fmt_header_main = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D9D9D9'})
+    fmt_header_main = workbook.add_format({'bold': True, 'align': 'center', 'font_size': 14, 'border': 1, 'bg_color': '#D9D9D9'})
     fmt_head_orange = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FCE4D6'})
     fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#E2EFDA'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
@@ -179,10 +179,10 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     curr_row += 2
 
     # TABEL 5: RINCIAN SELURUH PESANAN
-    # total_qty = t5_grouped['QUANTITY'].sum()
+    total_eks = t5_grouped['QUANTITY'].sum()
     total_qty = df_orders['ORDER ID'].nunique()
     ws_excel.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
-    ws_excel.write(curr_row, 1, total_qty, fmt_head_green)
+    ws_excel.write(curr_row, 1, total_eks, fmt_head_green)
     curr_row += 1
     t5_headers = ['NAMA PRODUK', 'VARIASI', 'JUMLAH EKSEMPLAR', 'OMZET PENJUALAN', 'TOTAL KOMISI AFFILIATE']
     for i, h in enumerate(t5_headers): ws_excel.write(curr_row, i, h, fmt_head_green)
@@ -216,20 +216,12 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
 
     ws_excel.set_column(0, 0, 50)
     ws_excel.set_column(1, 4, 20)
-
-    # df_orders.to_excel(workbook.add_worksheet("Semua Pesanan"), index=False)
-    # df_prod.to_excel(workbook.add_worksheet("Product Data"), index=False)
-    # df_aff.to_excel(workbook.add_worksheet("Creator Order"), index=False)
-
-
     
     df_orders.to_excel(writer, sheet_name="Semua Pesanan", index=False)
     df_prod.to_excel(writer, sheet_name="Product Data", index=False)
     df_aff.to_excel(writer, sheet_name="Creator Order-all", index=False)
 
     writer.close()
-
-    # workbook.close()
     output.seek(0)
     return output
     
