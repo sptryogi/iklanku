@@ -40,9 +40,16 @@ def extract_eksemplar(variasi_text):
     # Jika tidak ada kata kunci (Satuan, A5, Random, dll), hitung 1
     return 1
 
-def clean_variasi(text):
+def clean_variasi(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
+
+    # LOGIKA KHUSUS: Paket Wakaf Murah 50 pcs
+    if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(product_name):
+        # Ambil bagian depan koma
+        part = text.split(',')[0].strip().upper()
+        # Hapus kata 'AL AQEEL'
+        return part.replace('AL AQEEL', '').strip()
    
     # Ambil value di belakang koma, uppercase
     if ',' in text:
@@ -55,7 +62,7 @@ def clean_variasi_tiktok(text, product_name=""):
         return ''
     # Logika khusus untuk produk paket wakaf
     # Pastikan nama produk di bawah ini sama persis dengan yang ada di file excel
-    if "Paket Wakaf Murah 50 pcs" in str(product_name):
+    if "Alquran Paket Wakaf Murah 50 pcs Al Aqeel | Alquran 18 Baris" in str(product_name):
         part = text.split(',')[0].strip().upper()
         return part.replace('AL AQEEL', '').strip()
    
@@ -314,13 +321,25 @@ def process_data(toko, file_order, file_iklan, file_seller):
 
     # --- HITUNG EKSEMPLAR PER BARIS (GLOBAL) ---
     # 1. Bersihkan Variasi
-    df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
-    # 2. Hitung Total Eksemplar (Eksemplar per unit * Jumlah qty)
-    # Pastikan Jumlah sudah angka (float/int) dari proses clean sebelumnya
-    df_order['Eksemplar_Total'] = df_order.apply(
-        lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Jumlah'], axis=1
+    # df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
+    # # 2. Hitung Total Eksemplar (Eksemplar per unit * Jumlah qty)
+    # # Pastikan Jumlah sudah angka (float/int) dari proses clean sebelumnya
+    # df_order['Eksemplar_Total'] = df_order.apply(
+    #     lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Jumlah'], axis=1
+    # )
+    # 1. Update variasi_clean dengan mengirimkan nama produk
+    df_order['Variasi_Clean'] = df_order.apply(
+        lambda x: clean_variasi(x['Nama Variasi'], x['Nama Produk']), axis=1
     )
-
+    
+    # 2. Update eksemplar dengan pengali 50 khusus paket wakaf
+    def hitung_eksemplar_custom(row):
+        base_eksemplar = extract_eksemplar(row['Nama Variasi'])
+        if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(row['Nama Produk']):
+            return (base_eksemplar * 50) * row['Jumlah']
+        return base_eksemplar * row['Jumlah']
+    
+    df_order['Eksemplar_Total'] = df_order.apply(hitung_eksemplar_custom, axis=1)
 
     # 3. PRE-PROCESS IKLAN (Sheet 'Iklan klik')
     df_iklan.columns = df_iklan.columns.str.strip()
