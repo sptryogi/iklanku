@@ -72,6 +72,15 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#E2EFDA'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
+    fmt_text_left = workbook.add_format({'border':1,'align':'left'})
+    fmt_text_left_bold = workbook.add_format({'border':1,'align':'left','bold':True})
+    fmt_decimal = workbook.add_format({'border':1,'align':'center','num_format':'0.00'})
+
+    fmt_head_orange_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#FCE4D6'})
+    fmt_head_green_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#E2EFDA'})
+    fmt_curr_bold = workbook.add_format({'border':1,'num_format':'#,##0','align':'center','bold':True})
+    fmt_num_bold = workbook.add_format({'border':1,'align':'center','bold':True})
+
 
     # --- LOAD FILE ORDER MENGGUNAKAN LOAD_WORKBOOK ---
     temp_wb = load_workbook(file_order, data_only=True)
@@ -146,29 +155,30 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     }).reset_index()
 
     # --- WRITING EXCEL ---
-    ws_excel.write(0, 0, "LAPORAN IKLAN", fmt_header_main)
-    curr_row = 2
+    ws_excel.merge_range('A1:E2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
+    curr_row = 3
 
     # TABEL 2: RINCIAN BIAYA IKLAN
-    ws_excel.write(curr_row, 0, "RINCIAN BIAYA IKLAN", fmt_head_orange)
+    ws_excel.merge_range(curr_row, 0, curr_row, 2, "RINCIAN BIAYA IKLAN", fmt_head_orange)
     curr_row += 1
     t2_headers = ['NAMA PRODUK YANG DIIKLANKAN', 'BIAYA IKLAN', 'ROI']
     for i, h in enumerate(t2_headers): ws_excel.write(curr_row, i, h, fmt_head_orange)
     
     curr_row += 1
     for _, row in df_prod.iterrows():
-        ws_excel.write(curr_row, 0, str(row.get('NAMA PRODUK', '')).upper(), fmt_num)
+        ws_excel.write(curr_row, 0, str(row.get('NAMA PRODUK', '')).upper(), fmt_text_left)
         ws_excel.write(curr_row, 1, row.get('BIAYA', 0), fmt_curr)
         ws_excel.write(curr_row, 2, row.get('ROI', 0), fmt_num)
         curr_row += 1
     
     total_biaya_iklan = df_prod['BIAYA'].sum()
-    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_orange)
-    ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr)
+    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_orange_bold)
+    ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr_bold)
     curr_row += 2
 
     # TABEL 5: RINCIAN SELURUH PESANAN
-    total_qty = t5_grouped['QUANTITY'].sum()
+    # total_qty = t5_grouped['QUANTITY'].sum()
+    total_qty = df_orders['ORDER ID'].nunique()
     ws_excel.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
     ws_excel.write(curr_row, 1, total_qty, fmt_head_green)
     curr_row += 1
@@ -177,7 +187,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     
     curr_row += 1
     for _, row in t5_grouped.iterrows():
-        ws_excel.write(curr_row, 0, str(row['PRODUCT NAME']).upper(), fmt_num)
+        ws_excel.write(curr_row, 0, str(row['PRODUCT NAME']).upper(), fmt_text_left)
         ws_excel.write(curr_row, 1, str(row['VARIASI_CLEAN']).upper(), fmt_num)
         ws_excel.write(curr_row, 2, row['QUANTITY'], fmt_num)
         ws_excel.write(curr_row, 3, row['OMZET_PENJUALAN'], fmt_curr)
@@ -186,10 +196,11 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     
     total_omzet = t5_grouped['OMZET_PENJUALAN'].sum()
     total_komisi = t5_grouped['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum()
-    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_green)
-    ws_excel.write(curr_row, 2, total_qty, fmt_num)
-    ws_excel.write(curr_row, 3, total_omzet, fmt_curr)
-    ws_excel.write(curr_row, 4, total_komisi, fmt_curr)
+    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_green_bold)
+    ws_excel.write(curr_row, 1, "", fmt_head_green_bold)
+    ws_excel.write(curr_row, 2, total_qty, fmt_num_bold)
+    ws_excel.write(curr_row, 3, total_omzet, fmt_curr_bold)
+    ws_excel.write(curr_row, 4, total_komisi, fmt_curr_bold)
     curr_row += 2
 
     # TABEL 6: TOTAL PENJUALAN
@@ -199,10 +210,15 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     
     denom = (total_biaya_iklan + total_komisi)
     roi_final = total_omzet / denom if denom > 0 else 0
-    ws_excel.write(curr_row, 0, "ROI", fmt_head_orange); ws_excel.write(curr_row, 1, roi_final, fmt_num)
+    ws_excel.write(curr_row, 0, "ROI", fmt_head_orange); ws_excel.write(curr_row, 1, roi_final, fmt_decimal)
 
     ws_excel.set_column(0, 0, 50)
     ws_excel.set_column(1, 4, 20)
+
+    df_orders.to_excel(workbook.add_worksheet("Semua Pesanan"), index=False)
+    df_prod.to_excel(workbook.add_worksheet("Product Data"), index=False)
+    df_aff.to_excel(workbook.add_worksheet("Creator Order"), index=False)
+
     workbook.close()
     output.seek(0)
     return output
