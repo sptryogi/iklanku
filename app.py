@@ -24,6 +24,11 @@ def extract_time_hour(dt):
     except:
         return 0
 
+def clean_columns(df):
+    """Menghapus spasi di awal dan akhir dari semua nama kolom DataFrame."""
+    df.columns = df.columns.str.strip()
+    return df
+
 def extract_eksemplar(variasi_text):
     if not isinstance(variasi_text, str):
         return 1
