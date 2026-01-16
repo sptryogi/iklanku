@@ -60,6 +60,14 @@ def clean_variasi(text):
 def clean_variasi_tiktok(text):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
+
+    # LOGIKA KHUSUS: Paket Wakaf Murah 50 pcs
+    if "Alquran Paket Wakaf Murah 50 pcs Al Aqeel | Alquran 18 Baris" in str(product_name):
+        # Ambil bagian depan koma
+        part = text.split(',')[0].strip().upper()
+        # Hapus kata 'AL AQEEL'
+        return part.replace('AL AQEEL', '').strip()
+        
     # Ambil bagian depan sebelum koma (misal: 'A5, Biru' -> 'A5')
     return text.split(',')[0].strip().upper()
 
