@@ -64,68 +64,80 @@ def load_tiktok_file(uploaded_file, drop_second=False):
 def process_tiktok_data(toko, file_order, file_product, file_creator):
     output = io.BytesIO()
     workbook = xlsxwriter.Workbook(output, {'in_memory': True})
-    ws = workbook.add_worksheet("Laporan TikTok")
+    ws_excel = workbook.add_worksheet("Laporan TikTok")
     
-    # Format
+    # Format-format
     fmt_header_main = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D9D9D9'})
     fmt_head_orange = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FCE4D6'})
     fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#E2EFDA'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
     fmt_curr = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center'})
 
+    # --- LOAD FILE ORDER MENGGUNAKAN LOAD_WORKBOOK ---
     temp_wb = load_workbook(file_order, data_only=True)
     temp_ws = temp_wb.active
-    
     data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
     data = [r for r in data if any(r)]  # hapus baris kosong
     
-    final_header = [str(x).strip() if x else "" for x in data[0]]
-    
+    # Header cleaning & Penentuan baris data
+    final_header = [str(x).strip().upper() if x else "" for x in data[0]]
     if len(data) > 1 and any("Platform unique order ID" in str(x) for x in data[1]):
         data_rows = data[2:]
     else:
         data_rows = data[1:]
     
     df_orders = pd.DataFrame(data_rows, columns=final_header)
-    
-    df_orders.columns = df_orders.columns.str.strip()
-    df_orders.columns = [col.upper() for col in df_orders.columns]
 
-    # 1. LOAD DATA
+    # --- LOAD FILE PENDUKUNG (PRODUCT & CREATOR) ---
+    # Fungsi load_tiktok_file Anda harus memastikan kolom di-UPPER juga
     df_prod = load_tiktok_file(file_product)
+    df_prod.columns = [c.upper() for c in df_prod.columns]
+    
     df_aff = load_tiktok_file(file_creator)
+    df_aff.columns = [c.upper() for c in df_aff.columns]
 
-    # --- TAMBAHKAN INI AGAR TIDAK ERROR STR / STR ---
-    numeric_cols = [
-        'SKU UNIT ORIGINAL PRICE', 'SKU SELLER DISCOUNT', 
-        'QUANTITY', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR'
-    ]
+    # --- FIX ERROR: CONVERT TIPE DATA ---
+    # 1. Samakan kolom JOIN agar keduanya string (Mencegah error Merge Object/Int64)
+    if 'ORDER ID' in df_orders.columns:
+        df_orders['ORDER ID'] = df_orders['ORDER ID'].astype(str).str.strip()
+    if 'ID PESANAN' in df_aff.columns:
+        df_aff['ID PESANAN'] = df_aff['ID PESANAN'].astype(str).str.strip()
+
+    # 2. Convert kolom perhitungan ke Numeric
+    numeric_cols = ['SKU UNIT ORIGINAL PRICE', 'SKU SELLER DISCOUNT', 'QUANTITY']
     for col in numeric_cols:
         if col in df_orders.columns:
             df_orders[col] = pd.to_numeric(df_orders[col], errors='coerce').fillna(0)
+            
+    if 'PERKIRAAN PEMBAYARAN KOMISI STANDAR' in df_aff.columns:
+        df_aff['PERKIRAAN PEMBAYARAN KOMISI STANDAR'] = pd.to_numeric(df_aff['PERKIRAAN PEMBAYARAN KOMISI STANDAR'], errors='coerce').fillna(0)
     
-    # Lakukan hal yang sama untuk df_prod agar biaya bisa dijumlahkan
     if 'BIAYA' in df_prod.columns:
         df_prod['BIAYA'] = pd.to_numeric(df_prod['BIAYA'], errors='coerce').fillna(0)
 
-    # 2. FILTER & CLEANING ORDERS
+    # --- 2. FILTER & CLEANING ORDERS ---
     df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
+    
+    # Fungsi pembersihan variasi (A5, Biru -> A5)
+    def clean_variasi_tiktok(x):
+        return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
+    
     df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
     
-    # Rumus Omzet: (Original Price - (Discount / Qty)) * Qty
-    # df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'])) * df_orders['QUANTITY']
+    # Rumus Omzet Penjualan
     df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
-                                (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'].replace(0, 1))
-                               ) * df_orders['QUANTITY']
+                                    (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'].replace(0, 1))
+                                   ) * df_orders['QUANTITY']
 
-    # 3. JOIN COMMISSION (Matching by Order ID / ID Pesanan)
-    # Catatan: User minta cocokan Product Name tapi menyebutkan ID, 
-    # join ID jauh lebih akurat. Kita ambil kolom komisi.
+    # --- 3. JOIN COMMISSION ---
     df_aff_sub = df_aff[['ID PESANAN', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR']].copy()
+    # Menghindari duplikat ID di file affiliate jika ada
+    df_aff_sub = df_aff_sub.groupby('ID PESANAN')['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum().reset_index()
+    
     df_orders = df_orders.merge(df_aff_sub, left_on='ORDER ID', right_on='ID PESANAN', how='left')
     df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'] = df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].fillna(0)
 
-    # 4. AGGREGATE TABEL 5
+    # --- 4. AGGREGATE TABEL 5 (By Product Name) ---
     t5_grouped = df_orders.groupby('PRODUCT NAME').agg({
         'VARIASI_CLEAN': 'first',
         'QUANTITY': 'sum',
@@ -134,68 +146,63 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     }).reset_index()
 
     # --- WRITING EXCEL ---
-    ws.write(0, 0, "LAPORAN IKLAN", fmt_header_main)
+    ws_excel.write(0, 0, "LAPORAN IKLAN", fmt_header_main)
     curr_row = 2
 
     # TABEL 2: RINCIAN BIAYA IKLAN
-    ws.write(curr_row, 0, "RINCIAN BIAYA IKLAN", fmt_head_orange)
+    ws_excel.write(curr_row, 0, "RINCIAN BIAYA IKLAN", fmt_head_orange)
     curr_row += 1
-    t2_headers = ['Nama produk yang diiklankan', 'Biaya iklan', 'ROI']
-    for i, h in enumerate(t2_headers): ws.write(curr_row, i, h, fmt_head_orange)
+    t2_headers = ['NAMA PRODUK YANG DIIKLANKAN', 'BIAYA IKLAN', 'ROI']
+    for i, h in enumerate(t2_headers): ws_excel.write(curr_row, i, h, fmt_head_orange)
     
     curr_row += 1
-    t2_start_row = curr_row
     for _, row in df_prod.iterrows():
-        ws.write(curr_row, 0, row.get('NAMA PRODUK', ''), fmt_num)
-        ws.write(curr_row, 1, row.get('BIAYA', 0), fmt_curr)
-        ws.write(curr_row, 2, row.get('ROI', 0), fmt_num)
+        ws_excel.write(curr_row, 0, str(row.get('NAMA PRODUK', '')).upper(), fmt_num)
+        ws_excel.write(curr_row, 1, row.get('BIAYA', 0), fmt_curr)
+        ws_excel.write(curr_row, 2, row.get('ROI', 0), fmt_num)
         curr_row += 1
     
-    total_biaya_iklan = df_prod['BIAYA'].sum() if 'BIAYA' in df_prod.columns else 0
-    ws.write(curr_row, 0, "TOTAL", fmt_head_orange)
-    ws.write(curr_row, 1, total_biaya_iklan, fmt_curr)
-    ws.write(curr_row, 2, "", fmt_head_orange)
-    
+    total_biaya_iklan = df_prod['BIAYA'].sum()
+    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_orange)
+    ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr)
     curr_row += 2
 
     # TABEL 5: RINCIAN SELURUH PESANAN
     total_qty = t5_grouped['QUANTITY'].sum()
-    ws.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
-    ws.write(curr_row, 1, total_qty, fmt_head_green)
+    ws_excel.write(curr_row, 0, "RINCIAN SELURUH PESANAN", fmt_head_green)
+    ws_excel.write(curr_row, 1, total_qty, fmt_head_green)
     curr_row += 1
-    t5_headers = ['Nama Produk', 'Variasi', 'Jumlah Eksemplar', 'Omzet Penjualan', 'Total Komisi Affiliate']
-    for i, h in enumerate(t5_headers): ws.write(curr_row, i, h, fmt_head_green)
+    t5_headers = ['NAMA PRODUK', 'VARIASI', 'JUMLAH EKSEMPLAR', 'OMZET PENJUALAN', 'TOTAL KOMISI AFFILIATE']
+    for i, h in enumerate(t5_headers): ws_excel.write(curr_row, i, h, fmt_head_green)
     
     curr_row += 1
     for _, row in t5_grouped.iterrows():
-        ws.write(curr_row, 0, row['PRODUCT NAME'], fmt_num)
-        ws.write(curr_row, 1, row['VARIASI_CLEAN'], fmt_num)
-        ws.write(curr_row, 2, row['QUANTITY'], fmt_num)
-        ws.write(curr_row, 3, row['OMZET_PENJUALAN'], fmt_curr)
-        ws.write(curr_row, 4, row['PERKIRAAN PEMBAYARAN KOMISI STANDAR'], fmt_curr)
+        ws_excel.write(curr_row, 0, str(row['PRODUCT NAME']).upper(), fmt_num)
+        ws_excel.write(curr_row, 1, str(row['VARIASI_CLEAN']).upper(), fmt_num)
+        ws_excel.write(curr_row, 2, row['QUANTITY'], fmt_num)
+        ws_excel.write(curr_row, 3, row['OMZET_PENJUALAN'], fmt_curr)
+        ws_excel.write(curr_row, 4, row['PERKIRAAN PEMBAYARAN KOMISI STANDAR'], fmt_curr)
         curr_row += 1
     
     total_omzet = t5_grouped['OMZET_PENJUALAN'].sum()
     total_komisi = t5_grouped['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum()
-    ws.write(curr_row, 0, "TOTAL", fmt_head_green)
-    ws.write(curr_row, 1, "", fmt_head_green)
-    ws.write(curr_row, 2, total_qty, fmt_num)
-    ws.write(curr_row, 3, total_omzet, fmt_curr)
-    ws.write(curr_row, 4, total_komisi, fmt_curr)
-
+    ws_excel.write(curr_row, 0, "TOTAL", fmt_head_green)
+    ws_excel.write(curr_row, 2, total_qty, fmt_num)
+    ws_excel.write(curr_row, 3, total_omzet, fmt_curr)
+    ws_excel.write(curr_row, 4, total_komisi, fmt_curr)
     curr_row += 2
 
     # TABEL 6: TOTAL PENJUALAN
-    ws.write(curr_row, 0, "Total Penjualan", fmt_head_orange); ws.write(curr_row, 1, total_omzet, fmt_curr); curr_row += 1
-    ws.write(curr_row, 0, "Total Biaya Iklan", fmt_head_orange); ws.write(curr_row, 1, total_biaya_iklan, fmt_curr); curr_row += 1
-    ws.write(curr_row, 0, "Total Komisi Affiliate", fmt_head_orange); ws.write(curr_row, 1, total_komisi, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL PENJUALAN", fmt_head_orange); ws_excel.write(curr_row, 1, total_omzet, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL BIAYA IKLAN", fmt_head_orange); ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL KOMISI AFFILIATE", fmt_head_orange); ws_excel.write(curr_row, 1, total_komisi, fmt_curr); curr_row += 1
     
     denom = (total_biaya_iklan + total_komisi)
     roi_final = total_omzet / denom if denom > 0 else 0
-    ws.write(curr_row, 0, "ROI", fmt_head_orange); ws.write(curr_row, 1, roi_final, fmt_num)
+    ws_excel.write(curr_row, 0, "ROI", fmt_head_orange); ws_excel.write(curr_row, 1, roi_final, fmt_num)
 
-    ws.set_column(0, 0, 40)
-    ws.set_column(1, 4, 15)
+    ws_excel.set_column(0, 0, 50)
+    ws_excel.set_column(1, 4, 20)
     workbook.close()
     output.seek(0)
     return output
