@@ -146,8 +146,8 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
     
     # Fungsi pembersihan variasi (A5, Biru -> A5)
-    def clean_variasi_tiktok(x):
-        return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
+    # def clean_variasi_tiktok(x):
+    #     return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
     
     # df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
 
