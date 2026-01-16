@@ -200,7 +200,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     total_komisi = t5_grouped['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum()
     ws_excel.write(curr_row, 0, "TOTAL", fmt_head_green_bold)
     ws_excel.write(curr_row, 1, "", fmt_head_green_bold)
-    ws_excel.write(curr_row, 2, total_qty, fmt_num_bold)
+    ws_excel.write(curr_row, 2, total_eks, fmt_num_bold)
     ws_excel.write(curr_row, 3, total_omzet, fmt_curr_bold)
     ws_excel.write(curr_row, 4, total_komisi, fmt_curr_bold)
     curr_row += 2
