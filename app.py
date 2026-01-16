@@ -63,7 +63,11 @@ def load_tiktok_file(uploaded_file, drop_second=False):
 
 def process_tiktok_data(toko, file_order, file_product, file_creator):
     output = io.BytesIO()
-    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    # workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+    # ws_excel = workbook.add_worksheet("Laporan TikTok")
+
+    writer = pd.ExcelWriter(output, engine='xlsxwriter')
+    workbook = writer.book
     ws_excel = workbook.add_worksheet("Laporan TikTok")
     
     # Format-format
@@ -80,12 +84,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_head_green_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#E2EFDA'})
     fmt_curr_bold = workbook.add_format({'border':1,'num_format':'#,##0','align':'center','bold':True})
     fmt_num_bold = workbook.add_format({'border':1,'align':'center','bold':True})
-
-
-    # --- LOAD FILE ORDER MENGGUNAKAN LOAD_WORKBOOK ---
-    if isinstance(file_order, (bytes, bytearray)):
-        file_order = io.BytesIO(file_order)
-        
+   
     temp_wb = load_workbook(file_order, data_only=True)
     temp_ws = temp_wb.active
     data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
@@ -222,13 +221,11 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     # df_prod.to_excel(workbook.add_worksheet("Product Data"), index=False)
     # df_aff.to_excel(workbook.add_worksheet("Creator Order"), index=False)
 
-    writer = pd.ExcelWriter(output, engine='xlsxwriter')
-    writer.book = workbook
-    writer.sheets = {ws_excel.name: ws_excel}
+
     
     df_orders.to_excel(writer, sheet_name="Semua Pesanan", index=False)
     df_prod.to_excel(writer, sheet_name="Product Data", index=False)
-    df_aff.to_excel(writer, sheet_name="Creator Order", index=False)
+    df_aff.to_excel(writer, sheet_name="Creator Order-all", index=False)
 
     writer.close()
 
