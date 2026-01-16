@@ -24,11 +24,6 @@ def extract_time_hour(dt):
     except:
         return 0
 
-def clean_columns(df):
-    """Menghapus spasi di awal dan akhir dari semua nama kolom DataFrame."""
-    df.columns = df.columns.str.strip()
-    return df
-
 def extract_eksemplar(variasi_text):
     if not isinstance(variasi_text, str):
         return 1
@@ -63,10 +58,6 @@ def clean_variasi_tiktok(text):
 def load_tiktok_file(uploaded_file, drop_second=False):
     # Baca excel
     df = pd.read_excel(uploaded_file)
-    if drop_second and len(df) > 0:
-        # Hapus baris kedua (index 0 di data setelah header)
-        df = df.drop(df.index[0]).reset_index(drop=True)
-    # Jadikan header KAPITAL semua
     df.columns = [str(c).upper().strip() for c in df.columns]
     return df
 
@@ -98,7 +89,6 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     df_orders = pd.DataFrame(data_rows, columns=final_header)
     
     df_orders.columns = df_orders.columns.str.strip()
-    df_orders = clean_columns(df_orders)
     df_orders.columns = [col.upper() for col in df_orders.columns]
 
 
