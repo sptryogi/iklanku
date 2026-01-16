@@ -136,14 +136,6 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
         return str(x).split(',')[0].strip().upper() if pd.notna(x) else ''
     
     df_orders['VARIASI_CLEAN'] = df_orders['VARIATION'].apply(clean_variasi_tiktok)
-
-    # --- Update bagian Groupby Tabel 5 agar menggunakan JUMLAH_EKSEMPLAR ---
-    t5_grouped = df_orders.groupby('PRODUCT NAME').agg({
-        'VARIASI_CLEAN': 'first',
-        'JUMLAH_EKSEMPLAR': 'sum',  # Ganti QUANTITY jadi JUMLAH_EKSEMPLAR
-        'OMZET_PENJUALAN': 'sum',
-        'PERKIRAAN PEMBAYARAN KOMISI STANDAR': 'sum'
-    }).reset_index()
     
     # Rumus Omzet Penjualan
     df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
