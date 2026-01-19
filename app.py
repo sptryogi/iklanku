@@ -86,6 +86,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     
     # Format-format
     fmt_header_main = workbook.add_format({'bold': True, 'align': 'center', 'font_size': 14, 'border': 1, 'bg_color': '#D9D9D9'})
+    fmt_header_date = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D9D9D9'})
     fmt_head_orange = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#FCE4D6'})
     fmt_head_green = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#E2EFDA'})
     fmt_num = workbook.add_format({'border': 1, 'align': 'center'})
@@ -98,6 +99,10 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_head_green_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#E2EFDA'})
     fmt_curr_bold = workbook.add_format({'border':1,'num_format':'#,##0','align':'center','bold':True})
     fmt_num_bold = workbook.add_format({'border':1,'align':'center','bold':True})
+
+    fmt_curr_orange_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True, 'bg_color': '#FCE4D6'})
+    fmt_num_green_bold = workbook.add_format({'border': 1, 'align': 'center', 'bold': True, 'bg_color': '#E2EFDA'})
+    fmt_curr_green_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True, 'bg_color': '#E2EFDA'})
    
     temp_wb = load_workbook(file_order, data_only=True)
     temp_ws = temp_wb.active
@@ -112,6 +117,16 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
         data_rows = data[1:]
     
     df_orders = pd.DataFrame(data_rows, columns=final_header)
+
+    # --- AMBIL TANGGAL DARI CREATED TIME ---
+    try:
+        # Konversi ke datetime (mengambil yang paling awal jika berbeda-beda)
+        dates = pd.to_datetime(df_orders['CREATED TIME'], format='%d/%m/%Y %H:%M:%S', dayfirst=True, errors='coerce')
+        min_date = dates.min()
+        # Format: Kamis, 20/01/2026
+        date_str = min_date.strftime('%A, %d/%m/%Y')
+    except:
+        date_str = ""
 
     # --- LOAD FILE PENDUKUNG (PRODUCT & CREATOR) ---
     # Fungsi load_tiktok_file Anda harus memastikan kolom di-UPPER juga
@@ -184,7 +199,8 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     }).reset_index()
 
     # --- WRITING EXCEL ---
-    ws_excel.merge_range('A1:E2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
+    ws_excel.merge_range('A1:D2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
+    ws_excel.merge_range('E1:E2', date_str, fmt_header_date)
     curr_row = 3
 
     # TABEL 2: RINCIAN BIAYA IKLAN
@@ -202,7 +218,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     
     total_biaya_iklan = df_prod['BIAYA'].sum()
     ws_excel.write(curr_row, 0, "TOTAL", fmt_head_orange_bold)
-    ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr_bold)
+    ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr_orange_bold)
     curr_row += 2
 
     # TABEL 5: RINCIAN SELURUH PESANAN
@@ -227,9 +243,9 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     total_komisi = t5_grouped['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].sum()
     ws_excel.write(curr_row, 0, "TOTAL", fmt_head_green_bold)
     ws_excel.write(curr_row, 1, "", fmt_head_green_bold)
-    ws_excel.write(curr_row, 2, total_eks, fmt_num_bold)
-    ws_excel.write(curr_row, 3, total_omzet, fmt_curr_bold)
-    ws_excel.write(curr_row, 4, total_komisi, fmt_curr_bold)
+    ws_excel.write(curr_row, 2, total_eks, fmt_num__green_bold)
+    ws_excel.write(curr_row, 3, total_omzet, fmt_curr_green_bold)
+    ws_excel.write(curr_row, 4, total_komisi, fmt_curr_green_bold)
     curr_row += 2
 
     # TABEL 6: TOTAL PENJUALAN
