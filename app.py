@@ -199,8 +199,8 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     }).reset_index()
 
     # --- WRITING EXCEL ---
-    ws_excel.merge_range('A1:D2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
-    ws_excel.merge_range('E1:E2', date_str, fmt_header_date)
+    ws_excel.merge_range('A1:C2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
+    ws_excel.merge_range('D1:E2', date_str, fmt_header_main)
     curr_row = 3
 
     # TABEL 2: RINCIAN BIAYA IKLAN
