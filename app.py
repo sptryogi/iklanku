@@ -44,11 +44,12 @@ def clean_variasi(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
 
-    # LOGIKA KHUSUS: Paket Wakaf Murah 50 pcs
-    if "Paket Wakaf Murah 50 pcs" in str(product_name):
-        # Ambil bagian depan koma
+    # Deteksi produk khusus (Gunakan .upper() agar aman)
+    is_paket_wakaf = "PAKET WAKAF MURAH 50 PCS" in str(product_name).upper()
+    
+    if is_paket_wakaf:
+        # Ambil bagian DEPAN koma dan hapus AL AQEEL
         part = text.split(',')[0].strip().upper()
-        # Hapus kata 'AL AQEEL'
         return part.replace('AL AQEEL', '').strip()
    
     # Ambil value di belakang koma, uppercase
@@ -61,8 +62,10 @@ def clean_variasi_tiktok(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
     # Logika khusus untuk produk paket wakaf
-    # Pastikan nama produk di bawah ini sama persis dengan yang ada di file excel
-    if "Alquran Paket Wakaf Murah 50 pcs Al Aqeel | Alquran 18 Baris" in str(product_name):
+    is_paket_wakaf = "PAKET WAKAF MURAH 50 PCS" in str(product_name).upper()
+
+    if is_paket_wakaf:
+        # Ambil bagian DEPAN koma dan hapus AL AQEEL
         part = text.split(',')[0].strip().upper()
         return part.replace('AL AQEEL', '').strip()
    
@@ -170,7 +173,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     # Tambahkan kolom JUMLAH_EKSEMPLAR sebelum di-grouping
     def get_eksemplar_tiktok(row):
         base = extract_eksemplar(row['VARIASI_CLEAN'])
-        if "Paket Wakaf Murah 50 pcs" in str(row['PRODUCT NAME']):
+        if "PAKET WAKAF MURAH 50 PCS" in str(row['PRODUCT NAME']).upper():
             return (base * 50) * row['QUANTITY']
         return base * row['QUANTITY']
     
@@ -351,7 +354,7 @@ def process_data(toko, file_order, file_iklan, file_seller):
     # 2. Update eksemplar dengan pengali 50 khusus paket wakaf
     def hitung_eksemplar_custom(row):
         base_eksemplar = extract_eksemplar(row['Nama Variasi'])
-        if "Paket Wakaf Murah 50 pcs" in str(row['Nama Produk']):
+        if "PAKET WAKAF MURAH 50 PCS" in str(row['Nama Produk']).upper():
             return (base_eksemplar * 50) * row['Jumlah']
         return base_eksemplar * row['Jumlah']
     
