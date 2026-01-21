@@ -45,7 +45,7 @@ def clean_variasi(text, product_name=""):
         return ''
 
     # Deteksi produk khusus (Gunakan .upper() agar aman)
-    is_paket_wakaf = "PAKET WAKAF MURAH 50 PCS" in str(product_name).upper()
+    is_paket_wakaf = "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(product_name)
     
     if is_paket_wakaf:
         # Ambil bagian DEPAN koma dan hapus AL AQEEL
@@ -62,7 +62,7 @@ def clean_variasi_tiktok(text, product_name=""):
     if not isinstance(text, str) or pd.isna(text) or text == '':
         return ''
     # Logika khusus untuk produk paket wakaf
-    is_paket_wakaf = "PAKET WAKAF MURAH 50 PCS" in str(product_name).upper()
+    is_paket_wakaf = "Alquran Paket Wakaf Murah 50 pcs Al Aqeel | Alquran 18 Baris" in str(product_name)
 
     if is_paket_wakaf:
         # Ambil bagian DEPAN koma dan hapus AL AQEEL
@@ -173,7 +173,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     # Tambahkan kolom JUMLAH_EKSEMPLAR sebelum di-grouping
     def get_eksemplar_tiktok(row):
         base = extract_eksemplar(row['VARIASI_CLEAN'])
-        if "PAKET WAKAF MURAH 50 PCS" in str(row['PRODUCT NAME']).upper():
+        if "Alquran Paket Wakaf Murah 50 pcs Al Aqeel | Alquran 18 Baris" in str(row['PRODUCT NAME']):
             return (base * 50) * row['QUANTITY']
         return base * row['QUANTITY']
     
@@ -353,8 +353,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
     
     # 2. Update eksemplar dengan pengali 50 khusus paket wakaf
     def hitung_eksemplar_custom(row):
-        base_eksemplar = extract_eksemplar(row['Nama Variasi'])
-        if "PAKET WAKAF MURAH 50 PCS" in str(row['Nama Produk']).upper():
+        base_eksemplar = extract_eksemplar(row['Variasi_Clean'])
+        if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(row['Nama Produk']):
             return (base_eksemplar * 50) * row['Jumlah']
         return base_eksemplar * row['Jumlah']
     
