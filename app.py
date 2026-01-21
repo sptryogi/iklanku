@@ -615,7 +615,9 @@ def process_data(toko, file_order, file_iklan, file_seller):
     # 1. Siapkan kolom variasi bersih
     # df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
     if 'Nama Variasi' in df_order.columns:
-        df_order['Variasi_Clean'] = df_order['Nama Variasi'].apply(clean_variasi)
+        df_order['Variasi_Clean'] = df_order.apply(
+            lambda x: clean_variasi(x['Nama Variasi'], x['Nama Produk']), axis=1
+        )
     else:
         df_order['Variasi_Clean'] = ''
     
@@ -626,8 +628,16 @@ def process_data(toko, file_order, file_iklan, file_seller):
     ).reset_index()
     
     # 3. Hitung Eksemplar (Kuantitas * Eksemplar per variasi)
+    # grp_rincian['Jumlah Eksemplar'] = grp_rincian.apply(
+    #     lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Kuantitas'], axis=1
+    # )
     grp_rincian['Jumlah Eksemplar'] = grp_rincian.apply(
-        lambda row: extract_eksemplar(row['Variasi_Clean']) * row['Kuantitas'], axis=1
+        lambda row: (
+            extract_eksemplar(row['Variasi_Clean']) * 50 * row['Kuantitas']
+            if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(row['Nama Produk'])
+            else extract_eksemplar(row['Variasi_Clean']) * row['Kuantitas']
+        ),
+        axis=1
     )
 
     # F. TABEL SUMMARY
