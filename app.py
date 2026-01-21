@@ -45,7 +45,7 @@ def clean_variasi(text, product_name=""):
         return ''
 
     # LOGIKA KHUSUS: Paket Wakaf Murah 50 pcs
-    if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(product_name):
+    if "Paket Wakaf Murah 50 pcs" in str(product_name):
         # Ambil bagian depan koma
         part = text.split(',')[0].strip().upper()
         # Hapus kata 'AL AQEEL'
@@ -351,7 +351,7 @@ def process_data(toko, file_order, file_iklan, file_seller):
     # 2. Update eksemplar dengan pengali 50 khusus paket wakaf
     def hitung_eksemplar_custom(row):
         base_eksemplar = extract_eksemplar(row['Nama Variasi'])
-        if "Paket Wakaf Murah 50 pcs Alquran Al Aqeel | Alquran 18 Baris" in str(row['Nama Produk']):
+        if "Paket Wakaf Murah 50 pcs" in str(row['Nama Produk']):
             return (base_eksemplar * 50) * row['Jumlah']
         return base_eksemplar * row['Jumlah']
     
