@@ -1000,8 +1000,9 @@ if platform == "Shopee":
             with st.spinner('Memproses data Shopee...'):
                 try:
                     excel_file = process_data(toko, file_order, file_iklan, file_seller)
+                    suffix_date = datetime.now().strftime("%d_%m_%Y")
                     st.success("Selesai!")
-                    st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}.xlsx")
+                    st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}_{suffix_date}.xlsx")
                 except Exception as e:
                     st.error(f"Error: {e}")
 
@@ -1019,7 +1020,8 @@ else: # TikTok
             with st.spinner('Memproses data TikTok...'):
                 try:
                     excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
+                    suffix_date = datetime.now().strftime("%d_%m_%Y")
                     st.success("Selesai!")
-                    st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}.xlsx")
+                    st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
                 except Exception as e:
                     st.error(f"Error: {e}")
