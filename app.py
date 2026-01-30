@@ -534,8 +534,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
         # 4. Al Aqeel Gold (MENGGANTIKAN KOMIK PAHLAWAN)
         # Mendeteksi: "Alquran Cover Emas Kertas HVS Al Aqeel Gold Murah"
         # Kita pakai regex "Al Aqeel Gold" atau "Cover Emas" agar match
-        biaya_gold = get_biaya_regex(r"Al Aqeel Gold", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
+        biaya_gold = get_biaya_regex(r"Alquran Cover Emas Kertas HVS Al Aqeel A5 Gold Murah", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Gold', biaya_gold))
 
         b_a6_tahlil = get_biaya_regex(r"AL QUR'AN EDISI TAHLILAN 30 Juz + Doa Tahlil | Pengganti Buku Yasin | Al Aqeel A6 Pastel HVS Edisi Tahlilan", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
