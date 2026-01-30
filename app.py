@@ -494,12 +494,11 @@ def process_data(toko, file_order, file_iklan, file_seller):
     elif "DAMA.ID STORE" in toko:
         # DAMA.ID STORE Logic
         # # 1. A5 Kertas Koran
-        # b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
-        # rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
+        b_a5_koran = get_biaya_regex(r"Alquran Al Aqeel A5 Kertas Koran Tanpa Terjemahan Wakaf Ibtida", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', b_a5_koran))
         
-        # # 2. A6 HVS (Sesuai request: "A6 HVS")
-        # b_a6_hvs = get_biaya_regex(r"A6.*HVS", case_sensitive=False)
-        # rincian_biaya_khusus.append(('Biaya Iklan A6 HVS', b_a6_hvs))
+        b_grosir = get_biaya_regex(r"Paket Hemat Paket Grosir Al Quran | AQ Al Aqeel Wakaf Kerta koran Non Terjemah", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Hemat Al Aqeel', b_grosir))
         
         # 3. A6 Edisi Tahlil
         b_a6_tahlil = get_biaya_regex(r"A6.*EDISI.*TAHLIL", case_sensitive=False)
