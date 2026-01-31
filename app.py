@@ -536,6 +536,10 @@ def process_data(toko, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Alquran Cover Emas Kertas HVS Al Aqeel A5 Gold Murah", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Gold', biaya_gold))
 
+ 
+        biaya_gold_a7 = get_biaya_regex(r"Alquran Cover Emas Kertas HVS Al Aqeel A7 Gold Murah", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan A7 Gold', biaya_gold_a7))
+
         b_a6_tahlil = get_biaya_regex(r"AL QUR'AN EDISI TAHLILAN 30 Juz + Doa Tahlil | Pengganti Buku Yasin | Al Aqeel A6 Pastel HVS Edisi Tahlilan", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
