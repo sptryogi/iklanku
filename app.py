@@ -975,7 +975,7 @@ def process_data(toko, file_order, file_iklan, file_seller):
 
     writer.close()
     output.seek(0)
-    return output
+    return output, report_date
 
 
 # --- INTERFACE STREAMLIT ---
@@ -1002,8 +1002,9 @@ if platform == "Shopee":
         if file_order and file_iklan:
             with st.spinner('Memproses data Shopee...'):
                 try:
-                    excel_file = process_data(toko, file_order, file_iklan, file_seller)
-                    suffix_date = datetime.now().strftime("%d_%m_%Y")
+                    excel_file, report_date = process_data(toko, file_order, file_iklan, file_seller)
+                    # suffix_date = datetime.now().strftime("%d_%m_%Y")
+                    suffix_date = report_date.replace('/', '_')
                     st.success("Selesai!")
                     st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}_{suffix_date}.xlsx")
                 except Exception as e:
