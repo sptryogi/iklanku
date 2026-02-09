@@ -497,8 +497,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
         b_a5_koran = get_biaya_regex(r"Alquran Al Aqeel A5 Kertas Koran Tanpa Terjemahan Wakaf Ibtida", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', b_a5_koran))
         
-        b_grosir = get_biaya_regex(r"Paket Hemat Paket Grosir Al Quran | AQ Al Aqeel Wakaf Kerta koran Non Terjemah", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Paket Hemat Al Aqeel', b_grosir))
+        b_grosir = get_biaya_regex(r"Paket Hemat Grosir Wakaf Al Quran Al Aqeel A5 Kertas koran Non Terjemah (BANDUNG)", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Hemat Grosir Al Aqeel', b_grosir))
         
         # 3. A6 Edisi Tahlil
         b_a6_tahlil = get_biaya_regex(r"A6.*EDISI.*TAHLIL", case_sensitive=False)
@@ -507,8 +507,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
         biaya_gold = get_biaya_regex(r"Al.*Quran.*Gold.*Silver.*Aqeel", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
 
-        biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Alquran.*Al-Aqeel.*Tanpa.*Terjemahan.*BANDUNG.*Wakaf", case_sensitive=False)
-        rincian_biaya_khusus.append(('Biaya Iklan Paket Al Aqeel Tanpa Terjemahan', biaya_paket))
+        biaya_paket = get_biaya_regex(r"PAKET MURAH Alquran Al-Aqeel Tanpa Terjemahan (BANDUNG) Alquran Untuk Wakaf Hadiah Hampers", case_sensitive=False)
+        rincian_biaya_khusus.append(('Biaya Iklan Paket Murah Al Aqeel Tanpa Terjemahan', biaya_paket))
         
     else:
         # HUMAN STORE (Default/Original Logic)
