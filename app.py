@@ -470,7 +470,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
     # --- LOGIKA BIAYA IKLAN PER TOKO ---
     rincian_biaya_khusus = [] # List tuple (Label, Value)
 
-    if "Pacific Bookstore" in toko:
+    # if "Pacific Bookstore" in toko:
+    if toko in ["Pacific Bookstore", "Toko Kaliba"]:
         # Pacific Logic
         # 1. A5 Kertas Koran
         b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran", case_sensitive=False)
@@ -510,7 +511,8 @@ def process_data(toko, file_order, file_iklan, file_seller):
         biaya_paket = get_biaya_regex(r"PAKET.*MURAH.*Alquran.*Hadiah.*Hampers", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Paket Murah Al Aqeel Tanpa Terjemahan', biaya_paket))
         
-    else:
+    # else:
+    elif toko in ["Human Store", "Raka Bookstore"]:
         # HUMAN STORE (Default/Original Logic)
         # 1. A5 Koran (Kapital WAKAF)
         biaya_a5_koran = get_biaya_regex(r"AL QUR'AN NON TERJEMAH Al AQEEL A5 KERTAS KORAN WAKAF", case_sensitive=True)
@@ -986,7 +988,7 @@ st.markdown("---")
 platform = st.radio("Pilih Marketplace:", ["Shopee", "TikTok"], horizontal=True)
 
 # Input Toko
-toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE"])
+toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE", "Raka Bookstore", "Toko Kaliba"])
 
 # Input File Berdasarkan Platform
 if platform == "Shopee":
