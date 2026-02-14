@@ -492,18 +492,18 @@ def process_data(toko, file_order, file_iklan, file_seller):
         rincian_biaya_khusus.append(('Biaya Iklan Paket Murah', b_pkt_wakaf))
 
     elif "Toko Kaliba" in toko:
-        b_a5_koran = get_biaya_regex(r"Al Quran Al Aqeel A5 Kertas Koran 18 Baris | GARUT | Alquran Untuk Wakaf Hadiah Hampers", case_sensitive=False)
+        b_a5_koran = get_biaya_regex(r"A5.*Kertas.*Koran.*18.*Baris", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Kertas Koran', b_a5_koran))
         
         # 2. A6 Kertas HVS
-        b_a6_hvs = get_biaya_regex(r"Al Quran Al Aqeel A6 Pastel Kertas HVS 18 Baris | GARUT | Alquran Untuk Wakaf Hadiah Hampers", case_sensitive=False)
+        b_a6_hvs = get_biaya_regex(r"A6.*Pastel.*Kertas.*HVS.*18.*Baris", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 Kertas HVS', b_a6_hvs))
 
         # 3. A6 Edisi Tahlil
-        b_a6_tahlil = get_biaya_regex(r"Alquran Edisi Tahlilan Al Aqeel A6 Kertas HVS 18 Baris | GARUT | Alquran Untuk Wakaf Hadiah Souvenir Hampers", case_sensitive=False)
+        b_a6_tahlil = get_biaya_regex(r"Edisi.*Tahlilan.*A6.*Kertas.*HVS", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
-        biaya_gold = get_biaya_regex(r"Al Quran Al Aqeel A7 GOLD Kertas HVS 18 Baris | GARUT | Alquran untuk Pengajian Wakaf Hadiah Hampers", case_sensitive=False)
+        biaya_gold = get_biaya_regex(r"A7.*GOLD.*Kertas.*HVS.*18.*Baris.*Pengajian", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan Al Aqeel Gold', biaya_gold))
         
 
@@ -528,17 +528,17 @@ def process_data(toko, file_order, file_iklan, file_seller):
 
     elif "Raka Bookstore" in toko:
         # 1. A5 Koran (Kapital WAKAF)
-        biaya_a5_koran = get_biaya_regex(r"Alquran Wakaf Al Aqeel A5 Kertas Koran | Mushaf 18 Baris | Semarang", case_sensitive=True)
+        biaya_a5_koran = get_biaya_regex(r"Wakaf.*A5.*Kertas.*Koran", case_sensitive=True)
         rincian_biaya_khusus.append(('Biaya Iklan A5 Koran', biaya_a5_koran))
         
         # 2. A6 Pastel
-        biaya_a6_pastel = get_biaya_regex(r"Alquran Al Aqeel A6 Pastel HVS | Alquran Souvenir Cantik Hampers | Semarang", case_sensitive=False)
+        biaya_a6_pastel = get_biaya_regex(r"A6.*Pastel.*HVS.*Souvenir.*Cantik", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 Pastel', biaya_a6_pastel))
 
-        biaya_gold_a7 = get_biaya_regex(r"Alquran Mini Al Aqeel A7 Gold HVS | Cover Metalik | Alquran Souvenir | Semarang", case_sensitive=False)
+        biaya_gold_a7 = get_biaya_regex(r"Mini.*A7.*Gold.*HVS.*Cover.*Metalik", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A7 Gold', biaya_gold_a7))
 
-        b_a6_tahlil = get_biaya_regex(r"Alquran Edisi Tahlilan A6 | Alquran Custom Pengganti Yasin | 30 Juz Dengan Yasin Tahlil Terjemah | Semarang", case_sensitive=False)
+        b_a6_tahlil = get_biaya_regex(r"Edisi.*Tahlilan.*A6.*Custom.*Pengganti.*Yasin", case_sensitive=False)
         rincian_biaya_khusus.append(('Biaya Iklan A6 EDISI TAHLIL', b_a6_tahlil))
 
         
