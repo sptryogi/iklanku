@@ -30,6 +30,18 @@ def find_last_used_row(ws, min_col=1, max_col=5):
                     last_row = cell.row
     return last_row
 
+def format_cell_value(value):
+    if value is None or value == "":
+        return ""
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, (int, float)):
+        rounded = round(float(value), 2)
+        if rounded == int(rounded):
+            return f"{int(rounded):,}"
+        return f"{rounded:,.2f}"
+    return str(value)
+    
 def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
     excel_bytesio.seek(0)
     wb_img = load_workbook(io.BytesIO(excel_bytesio.read()), data_only=True)
@@ -73,7 +85,7 @@ def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
             for cell in row:
                 if cell.value not in (None, ""):
                     use_font = font_bold if (cell.font and cell.font.bold) else font
-                    w = text_w(cell.value, use_font) + 14
+                    w = text_w(format_cell_value(cell.value), use_font) + 14
                     if w > needed:
                         needed = w
         col_widths_px.append(needed)
@@ -123,7 +135,7 @@ def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
             draw.rectangle([x0, y0, x1, y1], fill=fill_color, outline='#BFBFBF', width=1)
 
             if cell.value not in (None, ""):
-                text = str(cell.value)
+                text = format_cell_value(cell.value)
                 use_font = font_bold if (cell.font and cell.font.bold) else font
                 bbox = draw.textbbox((0, 0), text, font=use_font)
                 tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
