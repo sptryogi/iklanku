@@ -1187,13 +1187,13 @@ toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID
 st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
+    file_order = st.file_uploader("Semua Pesanan (xlsx)", type=['xlsx'])
 with col2:
-    file_product = st.file_uploader("Upload 'Product Data' (xlsx) - Opsional", type=['xlsx'])
+    file_product = st.file_uploader("Product Data (xlsx)", type=['xlsx'])
 with col3:
-    file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx) - Opsional", type=['xlsx'])
+    file_creator = st.file_uploader("Creator Order-all (xlsx)", type=['xlsx'])
 with col4:
-    file_akumulasi = st.file_uploader("Upload 'Semua Pesanan Akumulasi' (xlsx) - Opsional", type=['xlsx'])
+    file_akumulasi = st.file_uploader("Semua Pesanan Akumulasi (xlsx)", type=['xlsx'])
 
 if st.button("Mulai Proses TikTok", type="primary"):
     if file_order:
