@@ -33,33 +33,64 @@ def find_last_used_row(ws, min_col=1, max_col=5):
 def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
     excel_bytesio.seek(0)
     wb_img = load_workbook(io.BytesIO(excel_bytesio.read()), data_only=True)
-    excel_bytesio.seek(0)  # reset agar buffer masih bisa dipakai download_button
+    excel_bytesio.seek(0)
 
     ws_img = wb_img[sheet_name]
     last_row = find_last_used_row(ws_img, min_col=1, max_col=5)
 
+    # Font mirip Calibri (Carlito) dulu, fallback ke DejaVu Sans, baru default
+    font_candidates = [
+        ("/usr/share/fonts/truetype/crosextra/Carlito-Regular.ttf", "/usr/share/fonts/truetype/crosextra/Carlito-Bold.ttf"),
+        ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
+    ]
+    font, font_bold = None, None
+    for regular_path, bold_path in font_candidates:
+        try:
+            font = ImageFont.truetype(regular_path, 15)
+            font_bold = ImageFont.truetype(bold_path, 15)
+            break
+        except Exception:
+            continue
+    if font is None:
+        font = ImageFont.load_default()
+        font_bold = font
+
+    def text_w(text, use_font):
+        bbox = use_font.getbbox(str(text))
+        return bbox[2] - bbox[0]
+
+    # Lebar kolom: kolom A tetap ikut lebar Excel (produk memang panjang),
+    # kolom B-E auto-fit supaya teks header (OMZET PENJUALAN, TOTAL KOMISI AFFILIATE, dst) tidak terpotong
     col_letters = ['A', 'B', 'C', 'D', 'E']
-    col_widths_px = [int((ws_img.column_dimensions[l].width or 10) * 7) for l in col_letters]
-    row_height_px = 20
+    col_widths_px = []
+    for i, letter in enumerate(col_letters):
+        base_width = int((ws_img.column_dimensions[letter].width or 10) * 7)
+        if letter == 'A':
+            col_widths_px.append(base_width)
+            continue
+        needed = base_width
+        for row in ws_img.iter_rows(min_col=i + 1, max_col=i + 1, max_row=last_row):
+            for cell in row:
+                if cell.value not in (None, ""):
+                    use_font = font_bold if (cell.font and cell.font.bold) else font
+                    w = text_w(cell.value, use_font) + 14
+                    if w > needed:
+                        needed = w
+        col_widths_px.append(needed)
+
+    row_height_px = 22
     total_width = sum(col_widths_px)
     total_height = row_height_px * last_row
 
     img = Image.new('RGB', (total_width, total_height), 'white')
     draw = ImageDraw.Draw(img)
 
-    try:
-        font = ImageFont.truetype("arial.ttf", 12)
-        font_bold = ImageFont.truetype("arialbd.ttf", 12)
-    except:
-        font = ImageFont.load_default()
-        font_bold = font
-
     merged_ranges = ws_img.merged_cells.ranges
 
     def get_merge_bounds(cell):
         for m in merged_ranges:
             if cell.coordinate in m:
-                return m.bounds  # (min_col, min_row, max_col, max_row)
+                return m.bounds
         return None
 
     col_x = [0]
@@ -89,15 +120,15 @@ def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
             if isinstance(rgb, str) and len(rgb) == 8 and rgb != '00000000':
                 fill_color = f"#{rgb[2:]}"
 
-            draw.rectangle([x0, y0, x1, y1], fill=fill_color, outline='#999999')
+            draw.rectangle([x0, y0, x1, y1], fill=fill_color, outline='#BFBFBF', width=1)
 
             if cell.value not in (None, ""):
                 text = str(cell.value)
                 use_font = font_bold if (cell.font and cell.font.bold) else font
                 bbox = draw.textbbox((0, 0), text, font=use_font)
                 tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-                tx = x0 + max(4, (x1 - x0 - tw) / 2)
-                ty = y0 + (row_height_px - th) / 2
+                tx = x0 + max(5, (x1 - x0 - tw) / 2)
+                ty = y0 + (row_height_px - th) / 2 - bbox[1]
                 draw.text((tx, ty), text, fill='black', font=use_font)
 
     out_img = io.BytesIO()
@@ -216,8 +247,8 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
     fmt_curr_green_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True, 'bg_color': '#E2EFDA'})
 
     fmt_head_blue = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#DDEBF7'})
-    fmt_curr_blue = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bg_color': '#DDEBF7'})
-    fmt_num_blue = workbook.add_format({'border': 1, 'align': 'center', 'bg_color': '#DDEBF7'})
+    fmt_curr_blue = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bg_color': '#DDEBF7', 'bold': True})
+    fmt_num_blue = workbook.add_format({'border': 1, 'align': 'center', 'bg_color': '#DDEBF7', 'bold': True})
 
     # temp_wb = load_workbook(file_order, data_only=True)
     # temp_ws = temp_wb.active
