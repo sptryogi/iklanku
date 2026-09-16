@@ -17,6 +17,9 @@ def clean_nama_iklan(text):
     # Hapus [angka] di belakang, misal "Produk A [26]" -> "Produk A"
     return re.sub(r'\s*\[\d+\]\s*$', '', text).strip()
 
+def is_cancelled_status(series):
+    return series.astype(str).str.lower().str.contains('batal|cancel', regex=True, na=False)
+    
 def extract_time_hour(dt):
     try:
         # Asumsi format timestamp pandas
@@ -78,7 +81,21 @@ def load_tiktok_file(uploaded_file, drop_second=False):
     df.columns = [str(c).upper().strip() for c in df.columns]
     return df
 
-def process_tiktok_data(toko, file_order, file_product, file_creator):
+def load_tiktok_orders_file(file):
+    temp_wb = load_workbook(file, data_only=True)
+    temp_ws = temp_wb.active
+    data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
+    data = [r for r in data if any(r)]
+
+    final_header = [str(x).strip().upper() if x else "" for x in data[0]]
+    if len(data) > 1 and any("Platform unique order ID" in str(x) for x in data[1]):
+        data_rows = data[2:]
+    else:
+        data_rows = data[1:]
+
+    return pd.DataFrame(data_rows, columns=final_header)
+
+def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumulasi=None):
     output = io.BytesIO()
     # workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     # ws_excel = workbook.add_worksheet("Laporan TikTok")
@@ -97,6 +114,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_text_left = workbook.add_format({'border':1,'align':'left'})
     fmt_text_left_bold = workbook.add_format({'border':1,'align':'left','bold':True})
     fmt_decimal = workbook.add_format({'border':1,'align':'center','num_format':'0.00'})
+    fmt_head_gray = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#D9D9D9'})
 
     fmt_head_orange_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#FCE4D6'})
     fmt_head_green_bold = workbook.add_format({'bold':True,'align':'center','border':1,'bg_color':'#E2EFDA'})
@@ -106,20 +124,25 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     fmt_curr_orange_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True, 'bg_color': '#FCE4D6'})
     fmt_num_green_bold = workbook.add_format({'border': 1, 'align': 'center', 'bold': True, 'bg_color': '#E2EFDA'})
     fmt_curr_green_bold = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bold': True, 'bg_color': '#E2EFDA'})
-   
-    temp_wb = load_workbook(file_order, data_only=True)
-    temp_ws = temp_wb.active
-    data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
-    data = [r for r in data if any(r)]  # hapus baris kosong
+
+    fmt_head_blue = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'bg_color': '#DDEBF7'})
+    fmt_curr_blue = workbook.add_format({'border': 1, 'num_format': '#,##0', 'align': 'center', 'bg_color': '#DDEBF7'})
+    fmt_num_blue = workbook.add_format({'border': 1, 'align': 'center', 'bg_color': '#DDEBF7'})
+
+    # temp_wb = load_workbook(file_order, data_only=True)
+    # temp_ws = temp_wb.active
+    # data = [list(row) for row in temp_ws.iter_rows(values_only=True)]
+    # data = [r for r in data if any(r)]  # hapus baris kosong
     
-    # Header cleaning & Penentuan baris data
-    final_header = [str(x).strip().upper() if x else "" for x in data[0]]
-    if len(data) > 1 and any("Platform unique order ID" in str(x) for x in data[1]):
-        data_rows = data[2:]
-    else:
-        data_rows = data[1:]
+    # # Header cleaning & Penentuan baris data
+    # final_header = [str(x).strip().upper() if x else "" for x in data[0]]
+    # if len(data) > 1 and any("Platform unique order ID" in str(x) for x in data[1]):
+    #     data_rows = data[2:]
+    # else:
+    #     data_rows = data[1:]
     
-    df_orders = pd.DataFrame(data_rows, columns=final_header)
+    # df_orders = pd.DataFrame(data_rows, columns=final_header)
+    df_orders = load_tiktok_orders_file(file_order)
 
     # --- AMBIL TANGGAL DARI CREATED TIME ---
     try:
@@ -158,7 +181,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
         df_aff['ID PESANAN'] = df_aff['ID PESANAN'].astype(str).str.strip()
 
     # 2. Convert kolom perhitungan ke Numeric
-    numeric_cols = ['SKU UNIT ORIGINAL PRICE', 'SKU SELLER DISCOUNT', 'QUANTITY']
+    numeric_cols = ['SKU UNIT ORIGINAL PRICE', 'SKU SELLER DISCOUNT', 'QUANTITY', 'SKU SUBTOTAL AFTER DISCOUNT']
     for col in numeric_cols:
         if col in df_orders.columns:
             df_orders[col] = pd.to_numeric(df_orders[col], errors='coerce').fillna(0)
@@ -170,7 +193,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
         df_prod['BIAYA'] = pd.to_numeric(df_prod['BIAYA'], errors='coerce').fillna(0)
 
     # --- 2. FILTER & CLEANING ORDERS ---
-    df_orders = df_orders[df_orders['ORDER STATUS'] != 'Dibatalkan'].copy()
+    df_orders = df_orders[~is_cancelled_status(df_orders['ORDER STATUS'])].copy()
     
     # Fungsi pembersihan variasi (A5, Biru -> A5)
     # def clean_variasi_tiktok(x):
@@ -191,9 +214,10 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     df_orders['JUMLAH_EKSEMPLAR'] = df_orders.apply(get_eksemplar_tiktok, axis=1)
     
     # Rumus Omzet Penjualan
-    df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
-                                    (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'].replace(0, 1))
-                                   ) * df_orders['QUANTITY']
+    # df_orders['OMZET_PENJUALAN'] = (df_orders['SKU UNIT ORIGINAL PRICE'] - 
+    #                                 (df_orders['SKU SELLER DISCOUNT'] / df_orders['QUANTITY'].replace(0, 1))
+    #                                ) * df_orders['QUANTITY']
+    df_orders['OMZET_PENJUALAN'] = df_orders['SKU SUBTOTAL AFTER DISCOUNT']
 
     # --- 3. JOIN COMMISSION ---
     df_aff_sub = df_aff[['ID PESANAN', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR']].copy()
@@ -263,13 +287,47 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
     curr_row += 2
 
     # TABEL 6: TOTAL PENJUALAN
-    ws_excel.write(curr_row, 0, "TOTAL PENJUALAN", fmt_head_orange); ws_excel.write(curr_row, 1, total_omzet, fmt_curr); curr_row += 1
-    ws_excel.write(curr_row, 0, "TOTAL BIAYA IKLAN", fmt_head_orange); ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr); curr_row += 1
-    ws_excel.write(curr_row, 0, "TOTAL KOMISI AFFILIATE", fmt_head_orange); ws_excel.write(curr_row, 1, total_komisi, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL PENJUALAN", fmt_head_gray); ws_excel.write(curr_row, 1, total_omzet, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL BIAYA IKLAN", fmt_head_gray); ws_excel.write(curr_row, 1, total_biaya_iklan, fmt_curr); curr_row += 1
+    ws_excel.write(curr_row, 0, "TOTAL KOMISI AFFILIATE", fmt_head_gray); ws_excel.write(curr_row, 1, total_komisi, fmt_curr); curr_row += 1
     
     denom = (total_biaya_iklan + total_komisi)
     roi_final = total_omzet / denom if denom > 0 else 0
-    ws_excel.write(curr_row, 0, "ROI", fmt_head_orange); ws_excel.write(curr_row, 1, roi_final, fmt_decimal)
+
+    # --- HITUNG DATA AKUMULASI (OPSIONAL) ---
+    akumulasi_data = None
+    if file_akumulasi is not None:
+        df_akum = load_tiktok_orders_file(file_akumulasi)
+        if 'SKU SUBTOTAL AFTER DISCOUNT' in df_akum.columns:
+            df_akum['SKU SUBTOTAL AFTER DISCOUNT'] = pd.to_numeric(df_akum['SKU SUBTOTAL AFTER DISCOUNT'], errors='coerce').fillna(0)
+    
+        mask_batal_all = is_cancelled_status(df_akum['ORDER STATUS'])
+    
+        total_order_keseluruhan = df_akum['ORDER ID'].nunique()
+        omzet_keseluruhan = df_akum['SKU SUBTOTAL AFTER DISCOUNT'].sum()
+    
+        df_akum_batal = df_akum[mask_batal_all]
+        total_order_batal = df_akum_batal['ORDER ID'].nunique()
+        omzet_batal = df_akum_batal['SKU SUBTOTAL AFTER DISCOUNT'].sum()
+    
+        df_akum_final = df_akum[~mask_batal_all]
+        total_order_final = df_akum_final['ORDER ID'].nunique()
+        omzet_final = df_akum_final['SKU SUBTOTAL AFTER DISCOUNT'].sum()
+    
+        akumulasi_data = [
+            ('Total Order Keseluruhan (Akumulasi)', total_order_keseluruhan, omzet_keseluruhan),
+            ('Total Order Batal (Akumulasi)', total_order_batal, omzet_batal),
+            ('Total Final Order (Akumulasi)', total_order_final, omzet_final),
+        ]
+    
+    ws_excel.write(curr_row, 0, "ROI", fmt_head_gray); ws_excel.write(curr_row, 1, roi_final, fmt_decimal)
+
+    if akumulasi_data:
+        for label, count_val, omzet_val in akumulasi_data:
+            curr_row += 1
+            ws_excel.write(curr_row, 0, label, fmt_head_blue)
+            ws_excel.write(curr_row, 1, count_val, fmt_num_blue)
+            ws_excel.write(curr_row, 2, omzet_val, fmt_curr_blue)
 
     ws_excel.set_column(0, 0, 50)
     ws_excel.set_column(1, 4, 20)
@@ -1030,19 +1088,21 @@ st.markdown("---")
 # Input Toko
 toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE", "Raka Bookstore", "Toko Kaliba"])
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
 with col2:
     file_product = st.file_uploader("Upload 'Product Data' (xlsx) - Opsional", type=['xlsx'])
 with col3:
     file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx) - Opsional", type=['xlsx'])
+with col4:
+    file_akumulasi = st.file_uploader("Upload 'Semua Pesanan Akumulasi' (xlsx) - Opsional", type=['xlsx'])
 
 if st.button("Mulai Proses TikTok", type="primary"):
     if file_order:
         with st.spinner('Memproses data TikTok...'):
             try:
-                excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
+                excel_file = process_tiktok_data(toko, file_order, file_product, file_creator, file_akumulasi)
                 suffix_date = datetime.now().strftime("%d_%m_%Y")
                 st.success("Selesai!")
                 st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
