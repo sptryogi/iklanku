@@ -1027,49 +1027,26 @@ st.title("🛒 IklanKu - Generator Laporan Otomatis")
 st.markdown("---")
 
 # Pilihan Platform
-platform = st.radio("Pilih Marketplace:", ["Shopee", "TikTok"], horizontal=True)
-
 # Input Toko
 toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE", "Raka Bookstore", "Toko Kaliba"])
 
-# Input File Berdasarkan Platform
-if platform == "Shopee":
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        file_order = st.file_uploader("Upload 'Order-all' (xlsx)", type=['xlsx'])
-    with col2:
-        file_iklan = st.file_uploader("Upload 'Iklan Keseluruhan' (csv)", type=['csv'])
-    with col3:
-        file_seller = st.file_uploader("Upload 'Seller conversion' (csv) - Opsional", type=['csv'])
+col1, col2, col3 = st.columns(3)
+with col1:
+    file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
+with col2:
+    file_product = st.file_uploader("Upload 'Product Data' (xlsx) - Opsional", type=['xlsx'])
+with col3:
+    file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx) - Opsional", type=['xlsx'])
 
-    if st.button("Mulai Proses Shopee", type="primary"):
-        if file_order and file_iklan:
-            with st.spinner('Memproses data Shopee...'):
-                try:
-                    excel_file, report_date = process_data(toko, file_order, file_iklan, file_seller)
-                    # suffix_date = datetime.now().strftime("%d_%m_%Y")
-                    suffix_date = report_date.replace('/', '_')
-                    st.success("Selesai!")
-                    st.download_button(label="📥 Download Laporan Shopee", data=excel_file, file_name=f"LAPORAN_SHOPEE_{toko.upper()}_{suffix_date}.xlsx")
-                except Exception as e:
-                    st.error(f"Error: {e}")
-
-else: # TikTok
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
-    with col2:
-        file_product = st.file_uploader("Upload 'Product Data' (xlsx)", type=['xlsx'])
-    with col3:
-        file_creator = st.file_uploader("Upload 'Creator Order-all' (xlsx)", type=['xlsx'])
-
-    if st.button("Mulai Proses TikTok", type="primary"):
-        if file_order and file_product and file_creator:
-            with st.spinner('Memproses data TikTok...'):
-                try:
-                    excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
-                    suffix_date = datetime.now().strftime("%d_%m_%Y")
-                    st.success("Selesai!")
-                    st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+if st.button("Mulai Proses TikTok", type="primary"):
+    if file_order:
+        with st.spinner('Memproses data TikTok...'):
+            try:
+                excel_file = process_tiktok_data(toko, file_order, file_product, file_creator)
+                suffix_date = datetime.now().strftime("%d_%m_%Y")
+                st.success("Selesai!")
+                st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
+            except Exception as e:
+                st.error(f"Error: {e}")
+    else:
+        st.warning("File 'Semua Pesanan' wajib diupload.")
