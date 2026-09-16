@@ -378,7 +378,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
 
     update_progress(85, "Menulis laporan Excel...")
     # --- WRITING EXCEL ---
-    ws_excel.merge_range('A1:C2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
+    ws_excel.merge_range('A1:C2', f'LAPORAN HARIAN TIKTOK {toko}', fmt_header_main)
     ws_excel.merge_range('D1:E2', date_str, fmt_header_main)
     curr_row = 3
 
@@ -946,7 +946,7 @@ def process_data(toko, file_order, file_iklan, file_seller):
     # TAMBAHKAN INI: Format angka dengan 2 desimal
     fmt_decimal = workbook.add_format({'border': 1, 'num_format': '0.00', 'align': 'center'})
     
-    # --- SHEET 1: LAPORAN IKLAN ---
+    # --- SHEET 1: LAPORAN HARIAN ---
     ws_lap = workbook.add_worksheet('LAPORAN IKLAN')
     
     # Judul Utama
