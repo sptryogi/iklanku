@@ -133,11 +133,22 @@ def process_tiktok_data(toko, file_order, file_product, file_creator):
 
     # --- LOAD FILE PENDUKUNG (PRODUCT & CREATOR) ---
     # Fungsi load_tiktok_file Anda harus memastikan kolom di-UPPER juga
-    df_prod = load_tiktok_file(file_product)
-    df_prod.columns = [c.upper() for c in df_prod.columns]
+    # df_prod = load_tiktok_file(file_product)
+    # df_prod.columns = [c.upper() for c in df_prod.columns]
     
-    df_aff = load_tiktok_file(file_creator)
-    df_aff.columns = [c.upper() for c in df_aff.columns]
+    # df_aff = load_tiktok_file(file_creator)
+    # df_aff.columns = [c.upper() for c in df_aff.columns]
+    if file_product is not None:
+        df_prod = load_tiktok_file(file_product)
+        df_prod.columns = [c.upper() for c in df_prod.columns]
+    else:
+        df_prod = pd.DataFrame(columns=['NAMA PRODUK', 'BIAYA', 'ROI'])
+    
+    if file_creator is not None:
+        df_aff = load_tiktok_file(file_creator)
+        df_aff.columns = [c.upper() for c in df_aff.columns]
+    else:
+        df_aff = pd.DataFrame(columns=['ID PESANAN', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR'])
 
     # --- FIX ERROR: CONVERT TIPE DATA ---
     # 1. Samakan kolom JOIN agar keduanya string (Mencegah error Merge Object/Int64)
