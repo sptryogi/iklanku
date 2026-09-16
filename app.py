@@ -5,9 +5,10 @@ import re
 from datetime import datetime
 import xlsxwriter
 from openpyxl import load_workbook
+from PIL import Image, ImageDraw, ImageFont
 
 # --- KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="IklanKu (Laporan Harian)", layout="wide")
+st.set_page_config(page_title="Tiktokan (Laporan Harian Tiktok)", layout="wide")
 
 # --- FUNGSI UTAMA (HELPER) ---
 
@@ -19,6 +20,90 @@ def clean_nama_iklan(text):
 
 def is_cancelled_status(series):
     return series.astype(str).str.lower().str.contains('batal|cancel', regex=True, na=False)
+
+def find_last_used_row(ws, min_col=1, max_col=5):
+    last_row = 1
+    for row in ws.iter_rows(min_col=min_col, max_col=max_col):
+        for cell in row:
+            if cell.value not in (None, ""):
+                if cell.row > last_row:
+                    last_row = cell.row
+    return last_row
+
+def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
+    excel_bytesio.seek(0)
+    wb_img = load_workbook(io.BytesIO(excel_bytesio.read()), data_only=True)
+    excel_bytesio.seek(0)  # reset agar buffer masih bisa dipakai download_button
+
+    ws_img = wb_img[sheet_name]
+    last_row = find_last_used_row(ws_img, min_col=1, max_col=5)
+
+    col_letters = ['A', 'B', 'C', 'D', 'E']
+    col_widths_px = [int((ws_img.column_dimensions[l].width or 10) * 7) for l in col_letters]
+    row_height_px = 20
+    total_width = sum(col_widths_px)
+    total_height = row_height_px * last_row
+
+    img = Image.new('RGB', (total_width, total_height), 'white')
+    draw = ImageDraw.Draw(img)
+
+    try:
+        font = ImageFont.truetype("arial.ttf", 12)
+        font_bold = ImageFont.truetype("arialbd.ttf", 12)
+    except:
+        font = ImageFont.load_default()
+        font_bold = font
+
+    merged_ranges = ws_img.merged_cells.ranges
+
+    def get_merge_bounds(cell):
+        for m in merged_ranges:
+            if cell.coordinate in m:
+                return m.bounds  # (min_col, min_row, max_col, max_row)
+        return None
+
+    col_x = [0]
+    for w in col_widths_px:
+        col_x.append(col_x[-1] + w)
+
+    for row_idx in range(1, last_row + 1):
+        y0 = (row_idx - 1) * row_height_px
+        for col_idx in range(1, 6):
+            cell = ws_img.cell(row=row_idx, column=col_idx)
+            bounds = get_merge_bounds(cell)
+
+            if bounds:
+                min_col_m, min_row_m, max_col_m, max_row_m = bounds
+                if (row_idx, col_idx) != (min_row_m, min_col_m):
+                    continue
+                x0 = col_x[min_col_m - 1]
+                x1 = col_x[min(max_col_m, 5)]
+                y1 = y0 + row_height_px * (max_row_m - min_row_m + 1)
+            else:
+                x0 = col_x[col_idx - 1]
+                x1 = col_x[col_idx]
+                y1 = y0 + row_height_px
+
+            fill_color = 'white'
+            rgb = getattr(cell.fill.fgColor, 'rgb', None) if cell.fill else None
+            if isinstance(rgb, str) and len(rgb) == 8 and rgb != '00000000':
+                fill_color = f"#{rgb[2:]}"
+
+            draw.rectangle([x0, y0, x1, y1], fill=fill_color, outline='#999999')
+
+            if cell.value not in (None, ""):
+                text = str(cell.value)
+                use_font = font_bold if (cell.font and cell.font.bold) else font
+                bbox = draw.textbbox((0, 0), text, font=use_font)
+                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                tx = x0 + max(4, (x1 - x0 - tw) / 2)
+                ty = y0 + (row_height_px - th) / 2
+                draw.text((tx, ty), text, fill='black', font=use_font)
+
+    out_img = io.BytesIO()
+    img.save(out_img, format='PNG')
+    out_img.seek(0)
+    return out_img
     
 def extract_time_hour(dt):
     try:
@@ -95,7 +180,12 @@ def load_tiktok_orders_file(file):
 
     return pd.DataFrame(data_rows, columns=final_header)
 
-def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumulasi=None):
+def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumulasi=None, progress_callback=None):
+    def update_progress(pct, text):
+        if progress_callback:
+            progress_callback(pct, text)
+
+    update_progress(5, "Membaca file...")
     output = io.BytesIO()
     # workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     # ws_excel = workbook.add_worksheet("Laporan TikTok")
@@ -192,6 +282,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
     if 'BIAYA' in df_prod.columns:
         df_prod['BIAYA'] = pd.to_numeric(df_prod['BIAYA'], errors='coerce').fillna(0)
 
+    update_progress(25, "Memfilter & membersihkan data pesanan...")
     # --- 2. FILTER & CLEANING ORDERS ---
     df_orders = df_orders[~is_cancelled_status(df_orders['ORDER STATUS'])].copy()
     
@@ -219,6 +310,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
     #                                ) * df_orders['QUANTITY']
     df_orders['OMZET_PENJUALAN'] = df_orders['SKU SUBTOTAL AFTER DISCOUNT']
 
+    update_progress(45, "Menggabungkan data komisi affiliate...")
     # --- 3. JOIN COMMISSION ---
     df_aff_sub = df_aff[['ID PESANAN', 'PERKIRAAN PEMBAYARAN KOMISI STANDAR']].copy()
     # Menghindari duplikat ID di file affiliate jika ada
@@ -227,6 +319,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
     df_orders = df_orders.merge(df_aff_sub, left_on='ORDER ID', right_on='ID PESANAN', how='left')
     df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'] = df_orders['PERKIRAAN PEMBAYARAN KOMISI STANDAR'].fillna(0)
 
+    update_progress(60, "Meringkas data produk...")
     # --- 4. AGGREGATE TABEL 5 (By Product Name) ---
     t5_grouped = df_orders.groupby('PRODUCT NAME').agg({
         'VARIASI_CLEAN': 'first',
@@ -236,6 +329,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
         'PERKIRAAN PEMBAYARAN KOMISI STANDAR': 'sum'
     }).reset_index()
 
+    update_progress(85, "Menulis laporan Excel...")
     # --- WRITING EXCEL ---
     ws_excel.merge_range('A1:C2', f'LAPORAN IKLAN TIKTOK {toko}', fmt_header_main)
     ws_excel.merge_range('D1:E2', date_str, fmt_header_main)
@@ -294,6 +388,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
     denom = (total_biaya_iklan + total_komisi)
     roi_final = total_omzet / denom if denom > 0 else 0
 
+    update_progress(75, "Menghitung data akumulasi...")
     # --- HITUNG DATA AKUMULASI (OPSIONAL) ---
     akumulasi_data = None
     if file_akumulasi is not None:
@@ -338,6 +433,7 @@ def process_tiktok_data(toko, file_order, file_product, file_creator, file_akumu
 
     writer.close()
     output.seek(0)
+    update_progress(100, "Selesai!")
     return output
     
 # --- LOGIKA PROSES DATA ---
@@ -1081,13 +1177,14 @@ def process_data(toko, file_order, file_iklan, file_seller):
 
 
 # --- INTERFACE STREAMLIT ---
-st.title("🛒 IklanKu - Generator Laporan Otomatis")
+st.title("🛒 Tiktokan - Generator Laporan Tiktok Otomatis")
 st.markdown("---")
 
 # Pilihan Platform
 # Input Toko
-toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE", "Raka Bookstore", "Toko Kaliba"])
+toko = st.selectbox("Pilih Toko:", ["Human Store", "Pacific Bookstore", "DAMA.ID STORE", "Raka Bookstore", "Toko Kaliba", "Toko Monang", "Toko Serayu"])
 
+st.markdown("<div style='margin-top:20px'></div>", unsafe_allow_html=True)
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     file_order = st.file_uploader("Upload 'Semua Pesanan' (xlsx)", type=['xlsx'])
@@ -1100,13 +1197,29 @@ with col4:
 
 if st.button("Mulai Proses TikTok", type="primary"):
     if file_order:
-        with st.spinner('Memproses data TikTok...'):
-            try:
-                excel_file = process_tiktok_data(toko, file_order, file_product, file_creator, file_akumulasi)
-                suffix_date = datetime.now().strftime("%d_%m_%Y")
-                st.success("Selesai!")
-                st.download_button(label="📥 Download Laporan TikTok", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
-            except Exception as e:
-                st.error(f"Error: {e}")
+        progress_bar = st.progress(0, text="Memulai proses...")
+
+        def update_progress(pct, text):
+            progress_bar.progress(pct, text=text)
+
+        try:
+            excel_file = process_tiktok_data(
+                toko, file_order, file_product, file_creator, file_akumulasi,
+                progress_callback=update_progress
+            )
+            image_file = generate_laporan_image(excel_file)
+            suffix_date = datetime.now().strftime("%d_%m_%Y")
+
+            progress_bar.empty()
+            st.success("Selesai!")
+
+            col_dl1, col_dl2 = st.columns(2)
+            with col_dl1:
+                st.download_button(label="📥 Download Laporan (Excel)", data=excel_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.xlsx")
+            with col_dl2:
+                st.download_button(label="🖼️ Download Laporan (Gambar)", data=image_file, file_name=f"LAPORAN_TIKTOK_{toko.upper()}_{suffix_date}.png", mime="image/png")
+        except Exception as e:
+            progress_bar.empty()
+            st.error(f"Error: {e}")
     else:
         st.warning("File 'Semua Pesanan' wajib diupload.")
