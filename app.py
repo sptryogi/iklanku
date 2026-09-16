@@ -38,8 +38,12 @@ def format_cell_value(value):
     if isinstance(value, (int, float)):
         rounded = round(float(value), 2)
         if rounded == int(rounded):
-            return f"{int(rounded):,}"
-        return f"{rounded:,.2f}"
+            formatted = f"{int(rounded):,}"
+        else:
+            formatted = f"{rounded:,.2f}"
+        # Format Indonesia: titik untuk ribuan, koma untuk desimal
+        formatted = formatted.replace(",", "X").replace(".", ",").replace("X", ".")
+        return formatted
     return str(value)
     
 def generate_laporan_image(excel_bytesio, sheet_name="Laporan TikTok"):
